@@ -4,18 +4,17 @@ from pathlib import Path
 import subprocess
 import sys
 
-import pyudev # type: ignore
-from icecream import ic # type: ignore
+import pyudev  # type: ignore
+from icecream import ic  # type: ignore
+
 
 def main():
-
     def uniq(list1):
         uniq_list = []
         for x in list1:
             if x not in uniq_list:
                 uniq_list.append(x)
         return uniq_list
-
 
     def process_args():
         parser = argparse.ArgumentParser()
@@ -58,10 +57,10 @@ def main():
             action="store_true",
             help=(
                 "Don't generate configuration.nix or hardware-configuration.nix and print the hardware configuration to"
-                "stdout only."),
+                "stdout only."
+            ),
         )
         return parser.parse_args()
-
 
     args = process_args()
 
@@ -77,14 +76,12 @@ def main():
     if not args.debug:
         ic.disable()
 
-
     try:
         os.mkdir(outDir)
     except FileExistsError:
         pass
     except OSError as error:
         print(f"Creation of {outDir} failed {error}")
-
 
     attrs = []
     initrdAvailableKernelModules = []
@@ -94,10 +91,8 @@ def main():
     firmwarePackages = []
     imports = []
 
-
     # cpuInfo("flags")
     # print(cpuInfo("flags"))
-
 
     def cpuSection():
         cpudata = {}
@@ -126,9 +121,7 @@ def main():
         elif "vmx" in cpuInfo("flags"):
             kernelModules.append("kvm-intel")
 
-        if os.path.exists(
-            "/sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors"
-        ):
+        if os.path.exists("/sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors"):
             governors = Path(
                 "/sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors"
             ).read_text()
@@ -138,12 +131,11 @@ def main():
                     attrs.append(f'powerManagement.cpuFreqGovernor = lib.mkDefault "{dg}";')
                     break
 
-
     def virtSection():
         virt = (
             (subprocess.run(["systemd-detect-virt"], capture_output=True, text=True)).stdout
         ).strip()
-        #ic(virt)
+        # ic(virt)
         if virt == "oracle":
             attrs.append("virtualisation.virtualbox.guest.enable = true;")
             ic()
@@ -157,19 +149,15 @@ def main():
             ic()
             imports.append('(modulesPath + "/profiles/qemu-quest.nix")')
 
-
     imports.append('(modulesPath + "/installer/scan/not-detected.nix")')
-
 
     def udevGet():
         context = pyudev.Context()
-        for device in context.list_devices(subsystem='input'):
-            input_type = (device.get('ID_INPUT_KEYBOARD'))
+        for device in context.list_devices(subsystem="input"):
+            input_type = device.get("ID_INPUT_KEYBOARD")
             if input_type:
-                usb_driver = (device.get('ID_USB_DRIVER'))
+                usb_driver = device.get("ID_USB_DRIVER")
                 print(usb_driver)
-
-
 
     udevGet()
 
@@ -177,11 +165,11 @@ def main():
         vendor = Path(path + "/vendor").read_text()
         device = Path(path + "/device").read_text()
         pclass = Path(path + "/class").read_text()
-        #ic(f"{path}: {vendor} {device} {pclass}")
+        # ic(f"{path}: {vendor} {device} {pclass}")
 
         module = ""
         if Path(path + "/driver/module").exists():
-            #ic()
+            # ic()
             module = (Path(path + "/driver/module").resolve()).name
 
         if module:
@@ -192,14 +180,13 @@ def main():
                 "0x0c00",
                 # USB controller.  Needed if we want to use the
                 # keyboard when things go wrong in the initrd.
-                "0x0c03"
+                "0x0c03",
             ]
             if any(x in pclass for x in matchmodulei):
                 initrdAvailableKernelModules.append(module)
 
         if vendor == "0x1af4" and device == "0x1004":
             initrdAvailableKernelModules.append("virtio_scsi")
-
 
         # broadcom
         if vendor == "0x14e4":
@@ -225,7 +212,7 @@ def main():
                 "0x4331",
                 "0x43a0",
                 # from 2aa3580a5e49d04bfa63c7509092317b49f54952
-                "0x43b1"
+                "0x43b1",
             ]
             broadcomFullMacDevList = [
                 # list taken from
@@ -261,22 +248,14 @@ def main():
         path = f"/sys/bus/pci/devices/{path}"
         pciCheck(path)
 
-
-
-
     videoDriver = 0
     if videoDriver:
         attrs.append(f'services.xserver.videoDrivers = [ "{videoDriver}" ]')
 
-
     def fsSection():
         pass
 
-
     fsSection()
-
-
-
 
     def toNixStringList(*args):
         res = ""
@@ -284,13 +263,11 @@ def main():
             res += f' "{v}"'
         return res
 
-
     def toNixList(*args):
         res = ""
         for v in args:
             res += f" {v}"
         return res
-
 
     def multiLineList(indent, *args):
         if not args:
@@ -314,17 +291,15 @@ def main():
         imports,
     ):
         # unpacking using * so we don't return, for example, "['usbhid']"
-        initrdAvailableKernelModules = toNixStringList(
-            *(uniq(initrdAvailableKernelModules))
-        )
+        initrdAvailableKernelModules = toNixStringList(*(uniq(initrdAvailableKernelModules)))
         initrdKernelModules = toNixStringList(*(uniq(initrdKernelModules)))
         kernelModules = toNixStringList(*(uniq(kernelModules)))
         modulePackages = toNixList(*(uniq(modulePackages)))
         firmwarePackages = toNixList(*(uniq(firmwarePackages)))
         imports = multiLineList("    ", *imports)
-        #ic(initrdAvailableKernelModules)
+        # ic(initrdAvailableKernelModules)
         with open(f"{rootDir}{outDir}/hardware-configuration.nix", "w") as tf:
-            #ic(tf)
+            # ic(tf)
             tf.write(
                 "# Do not modify this file!  It was generated by ‘nixos-generate-config’\n"
                 "# and may be overwritten by future invocations.  Please make changes\n"
@@ -344,7 +319,6 @@ def main():
                 tf.write("  " + attr + "\n")
             tf.write("\n}\n")
 
-
     virtSection()
     cpuSection()
     genHwFile(
@@ -356,5 +330,6 @@ def main():
         imports,
     )
 
-if __name__ == '__main__':
-  main()
+
+if __name__ == "__main__":
+    main()

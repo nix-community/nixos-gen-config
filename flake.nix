@@ -71,6 +71,7 @@
           ] ++ (with pkgs.python39Packages; [
             black
             flake8
+            flake8-length
             mypy
           ]);
         };
