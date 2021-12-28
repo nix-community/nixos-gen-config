@@ -13,8 +13,16 @@
 
         python = pkgs.python39;
         projectDir = ./.;
-        overrides = pkgs.poetry2nix.overrides.withDefaults (final: prev: {
+        overrides = pkgs.poetry2nix.overrides.withDefaults (self: super: {
           # Python dependency overrides go here
+          icecream = super.icecream.overridePythonAttrs (oldAttrs: {
+            #  # i don't know why the thing below is required when the package in nixpkgs works fine
+            #  # ERROR: Could not find a version that satisfies the requirement executing>=0.3.1 (from icecream) (from versions: none)
+            #  # ERROR: No matching distribution found for executing>=0.3.1
+            postPatch = ''
+              substituteInPlace setup.py --replace 'executing>=0.3.1' 'executing<0.3.1'
+            '';
+          });
         });
 
         packageName = "nixos-gen-config";
@@ -22,11 +30,11 @@
       {
 
         packages.${packageName} = pkgs.poetry2nix.mkPoetryApplication {
-          inherit python projectDir;
+          inherit python projectDir overrides;
           preBuild = ''
         '';
           # Non-Python runtime dependencies go here
-          propogatedBuildInputs = [ ];
+          propagatedBuildInputs = [ ];
         };
 
         defaultPackage = self.packages.${system}.${packageName};
