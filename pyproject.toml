@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "nixos_gen_config"
+version = "0.1.0"
+description = ""
+authors = ["Artturin <Artturin@artturin.com>"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+pyudev = "^0.22.0"
+icecream = "^2.1.1"
+
+[tool.poetry.dev-dependencies]
+#black  = "^21.5b0"
+#flake8 = "^3.9.2"
+#mypy   = "^0.812"
+
+[tool.poetry.scripts]
+nixos-gen-config = 'nixos_gen_config.main:start'
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
