@@ -7,7 +7,7 @@ import sys
 import pyudev
 from icecream import ic
 
-def start():
+def main():
 
     def uniq(list1):
         uniq_list = []
@@ -356,5 +356,5 @@ def start():
         imports,
     )
 
-#if __name__ == '__main__':
-#  start()
+if __name__ == '__main__':
+  main()
