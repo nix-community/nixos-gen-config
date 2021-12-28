@@ -60,9 +60,19 @@
           buildInputs = [
             (pkgs.poetry2nix.mkPoetryEnv {
               inherit python projectDir overrides;
+              extraPackages = (ps: with ps; [
+                (toPythonModule (pkgs.util-linux.overrideAttrs (oldAttrs: { nativeBuildInputs = oldAttrs.nativeBuildInputs ++ [ pkgs.python3 ]; })))
+                #black
+                #flake8
+                #mypy
+              ]);
             })
             pkgs.python39Packages.poetry
-          ];
+          ] ++ (with pkgs.python39Packages; [
+            black
+            flake8
+            mypy
+          ]);
         };
 
       });

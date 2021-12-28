@@ -4,8 +4,8 @@ from pathlib import Path
 import subprocess
 import sys
 
-import pyudev
-from icecream import ic
+import pyudev # type: ignore
+from icecream import ic # type: ignore
 
 def main():
 
@@ -15,8 +15,8 @@ def main():
             if x not in uniq_list:
                 uniq_list.append(x)
         return uniq_list
-    
-    
+
+
     def process_args():
         parser = argparse.ArgumentParser()
         parser.add_argument(
@@ -61,10 +61,10 @@ def main():
                 "stdout only."),
         )
         return parser.parse_args()
-    
-    
+
+
     args = process_args()
-    
+
     outDir = os.path.abspath(args.dir)
     if args.root:
         rootDir = os.path.normpath(args.root)
@@ -73,19 +73,19 @@ def main():
     force = args.force
     noFilesystems = args.no_filesystems
     showHardwareConfig = args.show_hardware_config
-    
+
     if not args.debug:
         ic.disable()
-    
-    
+
+
     try:
         os.mkdir(outDir)
     except FileExistsError:
         pass
     except OSError as error:
         print(f"Creation of {outDir} failed {error}")
-    
-    
+
+
     attrs = []
     initrdAvailableKernelModules = []
     initrdKernelModules = []
@@ -93,15 +93,15 @@ def main():
     modulePackages = []
     firmwarePackages = []
     imports = []
-    
-    
+
+
     # cpuInfo("flags")
     # print(cpuInfo("flags"))
-    
-    
+
+
     def cpuSection():
         cpudata = {}
-    
+
         def cpuInfo(field):
             cpuinfo = Path("/proc/cpuinfo").read_text()
             for line in cpuinfo.split("\n"):
@@ -111,7 +111,7 @@ def main():
                 left, right = line.split(":")
                 cpudata[left.strip()] = right.strip()
             return cpudata[field]
-    
+
         if cpuInfo("vendor_id") == "AuthenticAMD":
             attrs.append(
                 "hardware.cpu.amd.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;"
@@ -120,12 +120,12 @@ def main():
             attrs.append(
                 "hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;"
             )
-    
+
         if "svm" in cpuInfo("flags"):
             kernelModules.append("kvm-amd")
         elif "vmx" in cpuInfo("flags"):
             kernelModules.append("kvm-intel")
-    
+
         if os.path.exists(
             "/sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors"
         ):
@@ -137,8 +137,8 @@ def main():
                 if dg in governors:
                     attrs.append(f'powerManagement.cpuFreqGovernor = lib.mkDefault "{dg}";')
                     break
-    
-    
+
+
     def virtSection():
         virt = (
             (subprocess.run(["systemd-detect-virt"], capture_output=True, text=True)).stdout
@@ -156,11 +156,11 @@ def main():
         if virt == "qemu" or virt == "kvm" or virt == "bochs":
             ic()
             imports.append('(modulesPath + "/profiles/qemu-quest.nix")')
-    
-    
+
+
     imports.append('(modulesPath + "/installer/scan/not-detected.nix")')
-    
-    
+
+
     def udevGet():
         context = pyudev.Context()
         for device in context.list_devices(subsystem='input'):
@@ -168,22 +168,22 @@ def main():
             if input_type:
                 usb_driver = (device.get('ID_USB_DRIVER'))
                 print(usb_driver)
-    
-    
-    
+
+
+
     udevGet()
-    
+
     def pciCheck(path):
         vendor = Path(path + "/vendor").read_text()
         device = Path(path + "/device").read_text()
         pclass = Path(path + "/class").read_text()
         #ic(f"{path}: {vendor} {device} {pclass}")
-    
+
         module = ""
         if Path(path + "/driver/module").exists():
             #ic()
             module = (Path(path + "/driver/module").resolve()).name
-    
+
         if module:
             matchmodulei = [
                 # Mass-storage controller.  Definitely important.
@@ -196,11 +196,11 @@ def main():
             ]
             if any(x in pclass for x in matchmodulei):
                 initrdAvailableKernelModules.append(module)
-    
+
         if vendor == "0x1af4" and device == "0x1004":
             initrdAvailableKernelModules.append("virtio_scsi")
-    
-    
+
+
         # broadcom
         if vendor == "0x14e4":
             # broadcom STA driver (wl.ko)
@@ -256,42 +256,42 @@ def main():
             if any(x in device for x in broadcomFullMacDevList):
                 firmwarePackages.append("pkgs.firmwareLinuxNonfree")
                 kernelModules.append("brcmfmac")
-    
+
     for path in os.listdir("/sys/bus/pci/devices"):
         path = f"/sys/bus/pci/devices/{path}"
         pciCheck(path)
-    
-    
-    
-    
+
+
+
+
     videoDriver = 0
     if videoDriver:
         attrs.append(f'services.xserver.videoDrivers = [ "{videoDriver}" ]')
-    
-    
+
+
     def fsSection():
         pass
-    
-    
+
+
     fsSection()
-    
-    
-    
-    
+
+
+
+
     def toNixStringList(*args):
         res = ""
         for v in args:
             res += f' "{v}"'
         return res
-    
-    
+
+
     def toNixList(*args):
         res = ""
         for v in args:
             res += f" {v}"
         return res
-    
-    
+
+
     def multiLineList(indent, *args):
         if not args:
             return " [ ]"
@@ -304,7 +304,7 @@ def main():
             res += f"{v}\n"
         res += f"{indent}]"
         return res
-    
+
     def genHwFile(
         initrdAvailableKernelModules,
         initrdKernelModules,
@@ -343,8 +343,8 @@ def main():
             for attr in uniq(attrs):
                 tf.write("  " + attr + "\n")
             tf.write("\n}\n")
-    
-    
+
+
     virtSection()
     cpuSection()
     genHwFile(
