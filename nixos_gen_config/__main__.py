@@ -1,66 +1,20 @@
-import argparse
 import os
 from pathlib import Path
 import subprocess
 import sys
 
-import pyudev  # type: ignore
-from icecream import ic  # type: ignore
+from icecream import ic # type: ignore
+import pyudev # type: ignore
+
+import nixos_gen_config.auxiliary_functions as auxiliary_functions  # type: ignore
+from nixos_gen_config.arguments import process_args # type: ignore
 
 
 def main():
-    def uniq(list1):
-        uniq_list = []
-        for x in list1:
-            if x not in uniq_list:
-                uniq_list.append(x)
-        return uniq_list
-
-    def process_args():
-        parser = argparse.ArgumentParser()
-        parser.add_argument(
-            "--root",
-            type=Path,
-            help=(
-                "If this option is given, treat the directory root as the root of the file system. This means that "
-                "configuration files will be written to root/etc/nixos, and that any file systems outside of root are "
-                "ignored for the purpose of generating the fileSystems option."
-            ),
-        )
-        parser.add_argument(
-            "--dir",
-            type=Path,
-            # NOTE: uncomment
-            # default="/etc/nixos",
-            default="config1",
-            help="write the configuration files to the directory specified instead of /etc/nixos",
-        )
-        parser.add_argument(
-            "--force",
-            action="store_true",
-            help="Overwrite /etc/nixos/configuration.nix if it already exists",
-        )
-        parser.add_argument(
-            # NOTE: remember to change default to 0
-            "--debug",
-            action="store_true",
-            default=1,
-            help="icecream debug",
-        )
-        parser.add_argument(
-            "--no-filesystems",
-            action="store_true",
-            help="Omit everything concerning file systems and swap devices from the hardware configuration",
-        )
-        parser.add_argument(
-            "--show-hardware-config",
-            action="store_true",
-            help=(
-                "Don't generate configuration.nix or hardware-configuration.nix and print the hardware configuration to"
-                "stdout only."
-            ),
-        )
-        return parser.parse_args()
+    uniq = auxiliary_functions.uniq
+    toNixStringList = auxiliary_functions.toNixStringList
+    toNixList = auxiliary_functions.toNixList
+    multiLineList = auxiliary_functions.multiLineList
 
     args = process_args()
 
@@ -91,8 +45,6 @@ def main():
     firmwarePackages = []
     imports = []
 
-    # cpuInfo("flags")
-    # print(cpuInfo("flags"))
 
     def cpuSection():
         cpudata = {}
@@ -151,39 +103,57 @@ def main():
 
     imports.append('(modulesPath + "/installer/scan/not-detected.nix")')
 
-    def udevGet():
+    def udevGet(*query):
         context = pyudev.Context()
-        for device in context.list_devices(subsystem="input"):
-            input_type = device.get("ID_INPUT_KEYBOARD")
-            if input_type:
-                usb_driver = device.get("ID_USB_DRIVER")
-                print(usb_driver)
 
-    udevGet()
+        if query[0] == "usbKbDriver":
+            for device in context.list_devices(subsystem="input"):
+                input_type = device.get("ID_INPUT_KEYBOARD")
+                if input_type:
+                    usb_driver = device.get("ID_USB_DRIVER")
+                    # ic(usb_driver)
+                    initrdAvailableKernelModules.append(usb_driver)
+
+
+        if query[0] == "zfsPartitions":
+            for device in context.list_devices(subsystem="block"):
+                fs_type = device.get("ID_FS_TYPE")
+                if fs_type == "zfs_member":
+                    fs_label = device.get("ID_FS_LABEL")
+                    ic(fs_label)
+
+        if query[0] == "pciDrivers":
+            for device in context.list_devices(subsystem="pci"):
+                # https://github.com/systemd/systemd/blob/main/hwdb.d/20-pci-classes.hwdb
+                pci_class = device.get("ID_PCI_CLASS_FROM_DATABASE")
+                pci_id = device.get("ID_PCI_SUBCLASS_FROM_DATABASE")
+                pci_driver = device.get("DRIVER")
+                classFilter = [
+                    "USB controller",
+                    "FireWire (IEEE 1394)",
+                    "Mass storage controller",
+                ]
+                driverOverride = {
+                    # xhci_pci has xhci_hcd in deps. xhci_pci will be needed anyways so this keeps the list shorter.
+                    "xhci_hcd": "xhci_pci",
+                }
+                if (pci_id or pci_class) and pci_driver:
+                    if any(filter in (pci_class, pci_id) for filter in classFilter):
+                        if pci_driver in driverOverride:
+                            pci_driver = driverOverride[pci_driver]
+                        initrdAvailableKernelModules.append(pci_driver)
+                    #if pci_id == "USB controller" and pci_driver:
+                    #    initrdAvailableKernelModules.append(pci_driver)
+
+    udevGet("usbKbDriver")
+    udevGet("zfsPartitions")
+    udevGet("pciDrivers")
+
 
     def pciCheck(path):
         vendor = Path(path + "/vendor").read_text()
         device = Path(path + "/device").read_text()
         pclass = Path(path + "/class").read_text()
-        # ic(f"{path}: {vendor} {device} {pclass}")
-
-        module = ""
-        if Path(path + "/driver/module").exists():
-            # ic()
-            module = (Path(path + "/driver/module").resolve()).name
-
-        if module:
-            matchmodulei = [
-                # Mass-storage controller.  Definitely important.
-                "0x01",
-                # Firewire controller.  A disk might be attached.
-                "0x0c00",
-                # USB controller.  Needed if we want to use the
-                # keyboard when things go wrong in the initrd.
-                "0x0c03",
-            ]
-            if any(x in pclass for x in matchmodulei):
-                initrdAvailableKernelModules.append(module)
 
         if vendor == "0x1af4" and device == "0x1004":
             initrdAvailableKernelModules.append("virtio_scsi")
@@ -252,35 +222,6 @@ def main():
     if videoDriver:
         attrs.append(f'services.xserver.videoDrivers = [ "{videoDriver}" ]')
 
-    def fsSection():
-        pass
-
-    fsSection()
-
-    def toNixStringList(*args):
-        res = ""
-        for v in args:
-            res += f' "{v}"'
-        return res
-
-    def toNixList(*args):
-        res = ""
-        for v in args:
-            res += f" {v}"
-        return res
-
-    def multiLineList(indent, *args):
-        if not args:
-            return " [ ]"
-        res = f"\n{indent}[ "
-        first = 1
-        for v in args:
-            if not first:
-                res += f"{indent}  "
-            first = 0
-            res += f"{v}\n"
-        res += f"{indent}]"
-        return res
 
     def genHwFile(
         initrdAvailableKernelModules,
