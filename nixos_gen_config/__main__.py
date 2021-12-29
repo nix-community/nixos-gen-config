@@ -100,8 +100,11 @@ def main():
         if virt == "qemu" or virt == "kvm" or virt == "bochs":
             ic()
             imports.append('(modulesPath + "/profiles/qemu-quest.nix")')
+        if virt == "none":
+            # Provide firmware for devices that are not detected by this script,
+            # unless we're in a VM/container.
+            imports.append('(modulesPath + "/installer/scan/not-detected.nix")')
 
-    imports.append('(modulesPath + "/installer/scan/not-detected.nix")')
 
     def udevGet(*query):
         context = pyudev.Context()
@@ -124,99 +127,76 @@ def main():
 
         if query[0] == "pciDrivers":
             for device in context.list_devices(subsystem="pci"):
-                # https://github.com/systemd/systemd/blob/main/hwdb.d/20-pci-classes.hwdb
                 pci_class = device.get("ID_PCI_CLASS_FROM_DATABASE")
                 pci_id = device.get("ID_PCI_SUBCLASS_FROM_DATABASE")
                 pci_driver = device.get("DRIVER")
+                model_id = device.get("ID_MODEL_FROM_DATABASE")
+                # https://github.com/systemd/systemd/blob/main/hwdb.d/20-pci-classes.hwdb
                 classFilter = [
                     "USB controller",
                     "FireWire (IEEE 1394)",
                     "Mass storage controller",
                 ]
+                modelDict = {
+                    # for some of these the device loads something that has a driver different
+                    # to itself
+                    "Virtio SCSI": "virtio_scsi"
+                };
                 driverOverride = {
                     # xhci_pci has xhci_hcd in deps. xhci_pci will be needed anyways so this keeps the list shorter.
                     "xhci_hcd": "xhci_pci",
                 }
                 if (pci_id or pci_class) and pci_driver:
                     if any(filter in (pci_class, pci_id) for filter in classFilter):
-                        if pci_driver in driverOverride:
+                        if pci_driver in driverOverride.keys():
                             pci_driver = driverOverride[pci_driver]
                         initrdAvailableKernelModules.append(pci_driver)
-                    #if pci_id == "USB controller" and pci_driver:
-                    #    initrdAvailableKernelModules.append(pci_driver)
+
+                if model_id:
+                    if any(filter in model_id for filter in modelDict.keys()):
+                        initrdAvailableKernelModules.append(modelDict[model_id])
+
+        if query[0] == "wifiDrivers":
+            for device in context.list_devices(subsystem="pci"):
+                pci_driver = device.get("DRIVER")
+                model_id = device.get("ID_MODEL_FROM_DATABASE")
+                classFilter = [
+                    "Network controller",
+                ]
+                broadcomSTAList = [
+                    "BCM4311", # https://linux-hardware.org/?id=pci:14e4-4311
+                    "BCM4360", # https://linux-hardware.org/?id=pci:14e4-43a0
+                    "BCM4322", # https://linux-hardware.org/?id=pci:14e4-432b
+                    "BCM4313", # https://linux-hardware.org/?id=pci:14e4-4727
+                    "BCM4312", # https://linux-hardware.org/?id=pci:14e4-4315
+                    "BCM4321", # https://linux-hardware.org/?id=pci:14e4-4328
+                    "BCM43142", # https://linux-hardware.org/?id=pci:14e4-4365
+                    "BCM43224", # https://linux-hardware.org/?id=pci:14e4-4353
+                    "BCM43225", # https://linux-hardware.org/?id=pci:14e4-4357
+                    "BCM43227", # https://linux-hardware.org/?id=pci:14e4-4358
+                    "BCM43228", # https://linux-hardware.org/?id=pci:14e4-4359
+                    "BCM4331", # https://linux-hardware.org/?id=pci:14e4-4331
+                    "BCM4352", # https://linux-hardware.org/?id=pci:14e4-43b1
+
+                    # more devices probably belong here. however it is really tedious to go through them
+                    # https://linux-hardware.org/?view=search&vendor=Broadcom&typeid=net%2Fwireless#list
+                    # https://github.com/systemd/systemd/blob/main/hwdb.d/20-pci-vendor-model.hwdb
+                    # https://linux-hardware.org/?view=search
+                ]
+                if model_id:
+                    if any(filter in model_id for filter in broadcomSTAList):
+                        modulePackages.append("config.boot.kernelPackages.broadcom_sta")
+                        kernelModules.append("wl")
+
+                # NOTE for reviewers: Intel3945ABG and Intel2200BG are included in enableRedistributableFirmware
+                # devices that use brcmfmac are not needed to be specified due to the drivers being
+                # included in firmwareLinuxNonfree
 
     udevGet("usbKbDriver")
     udevGet("zfsPartitions")
     udevGet("pciDrivers")
+    udevGet("wifiDrivers")
 
-
-    def pciCheck(path):
-        vendor = Path(path + "/vendor").read_text()
-        device = Path(path + "/device").read_text()
-        pclass = Path(path + "/class").read_text()
-
-        if vendor == "0x1af4" and device == "0x1004":
-            initrdAvailableKernelModules.append("virtio_scsi")
-
-        # broadcom
-        if vendor == "0x14e4":
-            # broadcom STA driver (wl.ko)
-            broadcomSTADevList = [
-                # list taken from https://packages.debian.org/stretch/broadcom-sta-source README.txt
-                "0x4311",
-                "0x4312",
-                "0x4313",
-                "0x4315",
-                "0x4727",
-                "0x4328",
-                "0x4329",
-                "0x432a",
-                "0x432b",
-                "0x432c",
-                "0x432d",
-                "0x4365",
-                "0x4353",
-                "0x4357",
-                "0x4358",
-                "0x4359",
-                "0x4331",
-                "0x43a0",
-                # from 2aa3580a5e49d04bfa63c7509092317b49f54952
-                "0x43b1",
-            ]
-            broadcomFullMacDevList = [
-                # list taken from
-                # https://github.com/torvalds/linux/blob/master/drivers/net/wireless/broadcom/brcm80211/include/brcm_hw_ids.h
-                # PCIE Device IDs
-                "0x43a3",
-                "0x43df",
-                "0x43ec",
-                "0x43d3",
-                "0x43d9",
-                "0x43e9",
-                "0x43ef",
-                "0x43ba",
-                "0x43bb",
-                "0x43bc",
-                "0x4464",
-                "0x43ca",
-                "0x43cb",
-                "0x43cc",
-                "0x43c3",
-                "0x43c4",
-                "0x43c5",
-                "0x440d",
-            ]
-            if any(x in device for x in broadcomSTADevList):
-                modulePackages.append("config.boot.kernelPackages.broadcom_sta")
-                kernelModules.append("wl")
-            if any(x in device for x in broadcomFullMacDevList):
-                firmwarePackages.append("pkgs.firmwareLinuxNonfree")
-                kernelModules.append("brcmfmac")
-
-    for path in os.listdir("/sys/bus/pci/devices"):
-        path = f"/sys/bus/pci/devices/{path}"
-        pciCheck(path)
 
     videoDriver = 0
     if videoDriver:
