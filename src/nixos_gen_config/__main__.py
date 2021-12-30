@@ -1,13 +1,12 @@
 import os
 from pathlib import Path
 import subprocess
-import sys
 
-from icecream import ic # type: ignore
-import pyudev # type: ignore
+from icecream import ic  # type: ignore
+import pyudev  # type: ignore
 
-import nixos_gen_config.auxiliary_functions as auxiliary_functions  # type: ignore
-from nixos_gen_config.arguments import process_args # type: ignore
+from nixos_gen_config import auxiliary_functions  # type: ignore
+from nixos_gen_config.arguments import process_args  # type: ignore
 
 
 def main():
@@ -45,7 +44,6 @@ def main():
     firmwarePackages = []
     imports = []
 
-
     def cpuSection():
         cpudata = {}
 
@@ -74,9 +72,7 @@ def main():
             kernelModules.append("kvm-intel")
 
         if os.path.exists("/sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors"):
-            governors = Path(
-                "/sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors"
-            ).read_text()
+            governors = Path("/sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors").read_text()
             desired_governors = ["ondemand", "powersave"]
             for dg in desired_governors:
                 if dg in governors:
@@ -84,9 +80,7 @@ def main():
                     break
 
     def virtSection():
-        virt = (
-            (subprocess.run(["systemd-detect-virt"], capture_output=True, text=True)).stdout
-        ).strip()
+        virt = ((subprocess.run(["systemd-detect-virt"], capture_output=True, text=True)).stdout).strip()
         # ic(virt)
         if virt == "oracle":
             attrs.append("virtualisation.virtualbox.guest.enable = true;")
@@ -105,7 +99,6 @@ def main():
             # unless we're in a VM/container.
             imports.append('(modulesPath + "/installer/scan/not-detected.nix")')
 
-
     def udevGet(*query):
         context = pyudev.Context()
 
@@ -116,7 +109,6 @@ def main():
                     usb_driver = device.get("ID_USB_DRIVER")
                     # ic(usb_driver)
                     initrdAvailableKernelModules.append(usb_driver)
-
 
         if query[0] == "zfsPartitions":
             for device in context.list_devices(subsystem="block"):
@@ -141,7 +133,7 @@ def main():
                     # for some of these the device loads something that has a driver different
                     # to itself
                     "Virtio SCSI": "virtio_scsi"
-                };
+                }
                 driverOverride = {
                     # xhci_pci has xhci_hcd in deps. xhci_pci will be needed anyways so this keeps the list shorter.
                     "xhci_hcd": "xhci_pci",
@@ -164,20 +156,19 @@ def main():
                     "Network controller",
                 ]
                 broadcomSTAList = [
-                    "BCM4311", # https://linux-hardware.org/?id=pci:14e4-4311
-                    "BCM4360", # https://linux-hardware.org/?id=pci:14e4-43a0
-                    "BCM4322", # https://linux-hardware.org/?id=pci:14e4-432b
-                    "BCM4313", # https://linux-hardware.org/?id=pci:14e4-4727
-                    "BCM4312", # https://linux-hardware.org/?id=pci:14e4-4315
-                    "BCM4321", # https://linux-hardware.org/?id=pci:14e4-4328
-                    "BCM43142", # https://linux-hardware.org/?id=pci:14e4-4365
-                    "BCM43224", # https://linux-hardware.org/?id=pci:14e4-4353
-                    "BCM43225", # https://linux-hardware.org/?id=pci:14e4-4357
-                    "BCM43227", # https://linux-hardware.org/?id=pci:14e4-4358
-                    "BCM43228", # https://linux-hardware.org/?id=pci:14e4-4359
-                    "BCM4331", # https://linux-hardware.org/?id=pci:14e4-4331
-                    "BCM4352", # https://linux-hardware.org/?id=pci:14e4-43b1
-
+                    "BCM4311",  # https://linux-hardware.org/?id=pci:14e4-4311
+                    "BCM4360",  # https://linux-hardware.org/?id=pci:14e4-43a0
+                    "BCM4322",  # https://linux-hardware.org/?id=pci:14e4-432b
+                    "BCM4313",  # https://linux-hardware.org/?id=pci:14e4-4727
+                    "BCM4312",  # https://linux-hardware.org/?id=pci:14e4-4315
+                    "BCM4321",  # https://linux-hardware.org/?id=pci:14e4-4328
+                    "BCM43142",  # https://linux-hardware.org/?id=pci:14e4-4365
+                    "BCM43224",  # https://linux-hardware.org/?id=pci:14e4-4353
+                    "BCM43225",  # https://linux-hardware.org/?id=pci:14e4-4357
+                    "BCM43227",  # https://linux-hardware.org/?id=pci:14e4-4358
+                    "BCM43228",  # https://linux-hardware.org/?id=pci:14e4-4359
+                    "BCM4331",  # https://linux-hardware.org/?id=pci:14e4-4331
+                    "BCM4352",  # https://linux-hardware.org/?id=pci:14e4-43b1
                     # more devices probably belong here. however it is really tedious to go through them
                     # https://linux-hardware.org/?view=search&vendor=Broadcom&typeid=net%2Fwireless#list
                     # https://github.com/systemd/systemd/blob/main/hwdb.d/20-pci-vendor-model.hwdb
@@ -197,11 +188,9 @@ def main():
     udevGet("pciDrivers")
     udevGet("wifiDrivers")
 
-
     videoDriver = 0
     if videoDriver:
         attrs.append(f'services.xserver.videoDrivers = [ "{videoDriver}" ]')
-
 
     def genHwFile(
         initrdAvailableKernelModules,

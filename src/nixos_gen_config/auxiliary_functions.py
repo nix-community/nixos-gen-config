@@ -5,17 +5,20 @@ def uniq(list1):
             uniq_list.append(x)
     return uniq_list
 
+
 def toNixStringList(*args):
     res = ""
     for v in args:
         res += f' "{v}"'
     return res
 
+
 def toNixList(*args):
     res = ""
     for v in args:
         res += f" {v}"
     return res
+
 
 def multiLineList(indent, *args):
     if not args:
