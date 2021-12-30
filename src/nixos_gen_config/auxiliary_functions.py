@@ -6,21 +6,21 @@ def uniq(list1):
     return uniq_list
 
 
-def toNixStringList(*args):
+def to_nix_string_list(*args):
     res = ""
     for v in args:
         res += f' "{v}"'
     return res
 
 
-def toNixList(*args):
+def to_nix_list(*args):
     res = ""
     for v in args:
         res += f" {v}"
     return res
 
 
-def multiLineList(indent, *args):
+def to_nix_multi_line_list(indent, *args):
     if not args:
         return " [ ]"
     res = f"\n{indent}[ "

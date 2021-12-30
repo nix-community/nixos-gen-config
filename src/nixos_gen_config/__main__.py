@@ -11,43 +11,43 @@ from nixos_gen_config.arguments import process_args  # type: ignore
 
 def main():
     uniq = auxiliary_functions.uniq
-    toNixStringList = auxiliary_functions.toNixStringList
-    toNixList = auxiliary_functions.toNixList
-    multiLineList = auxiliary_functions.multiLineList
+    to_nix_string_list = auxiliary_functions.to_nix_string_list
+    to_nix_list = auxiliary_functions.to_nix_list
+    to_nix_multi_line_list = auxiliary_functions.to_nix_multi_line_list
 
     args = process_args()
 
-    outDir = os.path.abspath(args.dir)
+    out_dir = os.path.abspath(args.dir)
     if args.root:
-        rootDir = os.path.normpath(args.root)
+        root_dir = os.path.normpath(args.root)
     else:
-        rootDir = ""
+        root_dir = ""
     force = args.force
-    noFilesystems = args.no_filesystems
-    showHardwareConfig = args.show_hardware_config
+    no_filesystems = args.no_filesystems
+    show_hardware_config = args.show_hardware_config
 
     if not args.debug:
         ic.disable()
 
     try:
-        os.mkdir(outDir)
+        os.mkdir(out_dir)
     except FileExistsError:
         pass
     except OSError as error:
-        print(f"Creation of {outDir} failed {error}")
+        print(f"Creation of {out_dir} failed {error}")
 
     attrs = []
-    initrdAvailableKernelModules = []
-    initrdKernelModules = []
-    kernelModules = []
-    modulePackages = []
-    firmwarePackages = []
+    initrd_available_kernel_modules = []
+    initrd_kernel_modules = []
+    kernel_modules = []
+    module_packages = []
+    firmware_packages = []
     imports = []
 
-    def cpuSection():
+    def cpu_section():
         cpudata = {}
 
-        def cpuInfo(field):
+        def cpu_info(field):
             cpuinfo = Path("/proc/cpuinfo").read_text('utf-8')
             for line in cpuinfo.split("\n"):
                 # cpuinfo has a empty line at the end
@@ -57,19 +57,19 @@ def main():
                 cpudata[left.strip()] = right.strip()
             return cpudata[field]
 
-        if cpuInfo("vendor_id") == "AuthenticAMD":
+        if cpu_info("vendor_id") == "AuthenticAMD":
             attrs.append(
                 "hardware.cpu.amd.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;"
             )
-        elif cpuInfo("vendor_id") == "GenuineIntel":
+        elif cpu_info("vendor_id") == "GenuineIntel":
             attrs.append(
                 "hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;"
             )
 
-        if "svm" in cpuInfo("flags"):
-            kernelModules.append("kvm-amd")
-        elif "vmx" in cpuInfo("flags"):
-            kernelModules.append("kvm-intel")
+        if "svm" in cpu_info("flags"):
+            kernel_modules.append("kvm-amd")
+        elif "vmx" in cpu_info("flags"):
+            kernel_modules.append("kvm-intel")
 
         if os.path.exists("/sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors"):
             governors = Path("/sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors").read_text('utf-8')
@@ -79,7 +79,7 @@ def main():
                     attrs.append(f'powerManagement.cpuFreqGovernor = lib.mkDefault "{d_g}";')
                     break
 
-    def virtSection():
+    def virt_section():
         virtcmd = ""
         # systemd-detect-virt exits with 1 when virt = none
         try:
@@ -107,7 +107,7 @@ def main():
                 imports.append('(modulesPath + "/profiles/qemu-quest.nix")')
 
 
-    def udevGet(*query):
+    def udevGet(*query: str) -> None:
         context = pyudev.Context()
 
         if query[0] == "usbKbDriver":
@@ -116,7 +116,7 @@ def main():
                 if input_type:
                     usb_driver = device.get("ID_USB_DRIVER")
                     # ic(usb_driver)
-                    initrdAvailableKernelModules.append(usb_driver)
+                    initrd_available_kernel_modules.append(usb_driver)
 
         if query[0] == "zfsPartitions":
             for device in context.list_devices(subsystem="block"):
@@ -132,38 +132,38 @@ def main():
                 pci_driver = device.get("DRIVER")
                 model_id = device.get("ID_MODEL_FROM_DATABASE")
                 # https://github.com/systemd/systemd/blob/main/hwdb.d/20-pci-classes.hwdb
-                classFilter = [
+                class_filter = [
                     "USB controller",
                     "FireWire (IEEE 1394)",
                     "Mass storage controller",
                 ]
-                modelDict = {
+                model_dict = {
                     # for some of these the device loads something that has a driver different
                     # to itself
                     "Virtio SCSI": "virtio_scsi",
                 }
-                driverOverride = {
+                driver_overrides = {
                     # xhci_pci has xhci_hcd in deps. xhci_pci will be needed anyways so this keeps the list shorter.
                     "xhci_hcd": "xhci_pci",
                 }
                 if (pci_id or pci_class) and pci_driver:
-                    if any(filter in (pci_class, pci_id) for filter in classFilter):
-                        if pci_driver in list(driverOverride):
-                            pci_driver = driverOverride[pci_driver]
-                        initrdAvailableKernelModules.append(pci_driver)
+                    if any(filter in (pci_class, pci_id) for filter in class_filter):
+                        if pci_driver in list(driver_overrides):
+                            pci_driver = driver_overrides[pci_driver]
+                        initrd_available_kernel_modules.append(pci_driver)
 
                 if model_id:
-                    if any(filter in model_id for filter in modelDict):
-                        initrdAvailableKernelModules.append(modelDict[model_id])
+                    if any(filter in model_id for filter in model_dict):
+                        initrd_available_kernel_modules.append(model_dict[model_id])
 
         if query[0] == "wifiDrivers":
             for device in context.list_devices(subsystem="pci"):
                 pci_driver = device.get("DRIVER")
                 model_id = device.get("ID_MODEL_FROM_DATABASE")
-                classFilter = [
+                class_filter = [
                     "Network controller",
                 ]
-                broadcomSTAList = [
+                broadcom_sta_list = [
                     "BCM4311",  # https://linux-hardware.org/?id=pci:14e4-4311
                     "BCM4360",  # https://linux-hardware.org/?id=pci:14e4-43a0
                     "BCM4322",  # https://linux-hardware.org/?id=pci:14e4-432b
@@ -183,9 +183,9 @@ def main():
                     # https://linux-hardware.org/?view=search
                 ]
                 if model_id:
-                    if any(filter in model_id for filter in broadcomSTAList):
-                        modulePackages.append("config.boot.kernelPackages.broadcom_sta")
-                        kernelModules.append("wl")
+                    if any(filter in model_id for filter in broadcom_sta_list):
+                        module_packages.append("config.boot.kernelPackages.broadcom_sta")
+                        kernel_modules.append("wl")
 
                 # NOTE for reviewers: Intel3945ABG and Intel2200BG are included in enableRedistributableFirmware
                 # devices that use brcmfmac are not needed to be specified due to the drivers being
@@ -196,27 +196,27 @@ def main():
     udevGet("pciDrivers")
     udevGet("wifiDrivers")
 
-    videoDriver = 0
-    if videoDriver:
-        attrs.append(f'services.xserver.videoDrivers = [ "{videoDriver}" ]')
+    video_driver = 0
+    if video_driver:
+        attrs.append(f'services.xserver.videoDrivers = [ "{video_driver}" ]')
 
-    def genHwFile(
-        initrdAvailableKernelModules,
-        initrdKernelModules,
-        kernelModules,
-        modulePackages,
-        firmwarePackages,
+    def gen_hw_file(
+        initrd_available_kernel_modules,
+        initrd_kernel_modules,
+        kernel_modules,
+        module_packages,
+        firmware_packages,
         imports,
     ):
         # unpacking using * so we don't return, for example, "['usbhid']"
-        initrdAvailableKernelModules = toNixStringList(*(uniq(initrdAvailableKernelModules)))
-        initrdKernelModules = toNixStringList(*(uniq(initrdKernelModules)))
-        kernelModules = toNixStringList(*(uniq(kernelModules)))
-        modulePackages = toNixList(*(uniq(modulePackages)))
-        firmwarePackages = toNixList(*(uniq(firmwarePackages)))
-        imports = multiLineList("    ", *imports)
+        initrd_available_kernel_modules = to_nix_string_list(*(uniq(initrd_available_kernel_modules)))
+        initrd_kernel_modules = to_nix_string_list(*(uniq(initrd_kernel_modules)))
+        kernel_modules = to_nix_string_list(*(uniq(kernel_modules)))
+        module_packages = to_nix_list(*(uniq(module_packages)))
+        firmware_packages = to_nix_list(*(uniq(firmware_packages)))
+        imports = to_nix_multi_line_list("    ", *imports)
         # ic(initrdAvailableKernelModules)
-        with open(f"{rootDir}{outDir}/hardware-configuration.nix", "w", encoding='utf-8') as t_f:
+        with open(f"{root_dir}{out_dir}/hardware-configuration.nix", "w", encoding='utf-8') as t_f:
             # ic(t_f)
             t_f.write(
                 "# Do not modify this file!  It was generated by ‘nixos-generate-config’\n"
@@ -227,24 +227,24 @@ def main():
                 "{\n"
                 f"  imports ={imports};\n"
                 "\n"
-                f"  boot.initrd.availableKernelModules = [{initrdAvailableKernelModules} ];\n"
-                f"  boot.initrd.kernelModules = [{initrdKernelModules} ];\n"
-                f"  boot.kernelModules = [{kernelModules} ];\n"
-                f"  boot.extraModulePackages = [{modulePackages} ];\n"
-                f"  hardware.firmware = [{firmwarePackages} ];\n"
+                f"  boot.initrd.availableKernelModules = [{initrd_available_kernel_modules} ];\n"
+                f"  boot.initrd.kernelModules = [{initrd_kernel_modules} ];\n"
+                f"  boot.kernelModules = [{kernel_modules} ];\n"
+                f"  boot.extraModulePackages = [{module_packages} ];\n"
+                f"  hardware.firmware = [{firmware_packages} ];\n"
             )
             for attr in uniq(attrs):
                 t_f.write("  " + attr + "\n")
             t_f.write("\n}\n")
 
-    virtSection()
-    cpuSection()
-    genHwFile(
-        initrdAvailableKernelModules,
-        initrdKernelModules,
-        kernelModules,
-        modulePackages,
-        firmwarePackages,
+    virt_section()
+    cpu_section()
+    gen_hw_file(
+        initrd_available_kernel_modules,
+        initrd_kernel_modules,
+        kernel_modules,
+        module_packages,
+        firmware_packages,
         imports,
     )
 
