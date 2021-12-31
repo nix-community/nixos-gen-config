@@ -32,3 +32,8 @@ def to_nix_multi_line_list(indent, *args):
         res += f"{v}\n"
     res += f"{indent}]"
     return res
+
+def to_nix_true_attr(attr: str):
+    return f"{attr} = true;"
+def to_nix_false_attr(attr: str):
+    return f"{attr} = false;"

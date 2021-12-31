@@ -16,7 +16,7 @@ icecream = "^2.1.1"
 #mypy = "^0.930"
 
 [tool.poetry.scripts]
-nixos-gen-config = 'nixos_gen_config.__main__:main'
+nixos-gen-config = 'nixos_gen_config.main:main'
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -34,3 +34,7 @@ typeCheckingMode = ['basic']
 
 [tool.pylint.FORMAT]
 max-line-length = 120
+disable = [ 'C0114', 'C0115', 'C0116' ]
+#    C0114 (missing-module-docstring)
+#    C0115 (missing-class-docstring)
+#    C0116 (missing-function-docstring)
