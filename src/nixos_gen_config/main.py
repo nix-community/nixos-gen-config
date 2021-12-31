@@ -1,16 +1,16 @@
+from dataclasses import dataclass, field
 import os
 from pathlib import Path
-from dataclasses import dataclass, field
 import subprocess
 
-from icecream import ic  # type: ignore
-import pyudev  # type: ignore
+from icecream import ic
 
-from nixos_gen_config import auxiliary_functions  # type: ignore
-from nixos_gen_config.arguments import process_args  # type: ignore
-from nixos_gen_config.hardware import cpu_section, udevGet # type: ignore
+from nixos_gen_config import auxiliary_functions
+from nixos_gen_config.arguments import process_args
 from nixos_gen_config.classes import nixConfigAttrs
 from nixos_gen_config.generate_hw_config import generate_hw_config
+from nixos_gen_config.hardware import cpu_section, udevGet
+from nixos_gen_config.partitions import get_fs
 
 
 def main():
@@ -86,6 +86,7 @@ def main():
             t_f.write(generate_hw_config(nix_config))
 
 
+    get_fs(nixConfig)
 
     write_hw_config(nixConfig)
 

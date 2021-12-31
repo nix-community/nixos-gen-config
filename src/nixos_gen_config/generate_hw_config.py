@@ -1,5 +1,6 @@
 from string import Template
-from nixos_gen_config import auxiliary_functions  # type: ignore
+
+from nixos_gen_config import auxiliary_functions
 from nixos_gen_config.classes import nixConfigAttrs
 
 uniq = auxiliary_functions.uniq
