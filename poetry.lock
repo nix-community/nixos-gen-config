@@ -80,10 +80,26 @@ category = "main"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*"
 
+[[package]]
+name = "types-psutil"
+version = "5.8.17"
+description = "Typing stubs for psutil"
+category = "dev"
+optional = false
+python-versions = "*"
+
+[[package]]
+name = "types-setuptools"
+version = "57.4.5"
+description = "Typing stubs for setuptools"
+category = "dev"
+optional = false
+python-versions = "*"
+
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "1b7b91149096bd4a2af55dd6a7b88ef29a07babea663bc3a313cf50cb95b6f2f"
+content-hash = "9d0c0a5dde3792daf33547ff051237375505332a089378a08f7a3dc4ea67c6d6"
 
 [metadata.files]
 asttokens = [
@@ -141,4 +157,12 @@ pyudev = [
 six = [
     {file = "six-1.16.0-py2.py3-none-any.whl", hash = "sha256:8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254"},
     {file = "six-1.16.0.tar.gz", hash = "sha256:1e61c37477a1626458e36f7b1d82aa5c9b094fa4802892072e49de9c60c4c926"},
+]
+types-psutil = [
+    {file = "types-psutil-5.8.17.tar.gz", hash = "sha256:224660cd7f93c4dd884da2c956cfc1ad4673cffe14259ebb72b99886b26b8298"},
+    {file = "types_psutil-5.8.17-py3-none-any.whl", hash = "sha256:7e7fc252219ad187906e975ece0ac34a449bcd62f73494a84e05f00ec4fb9a1d"},
+]
+types-setuptools = [
+    {file = "types-setuptools-57.4.5.tar.gz", hash = "sha256:a4600efdca68a33204ad9c083fd9966d63aee61a7d007e912b6afc6ff57d6e02"},
+    {file = "types_setuptools-57.4.5-py3-none-any.whl", hash = "sha256:920a7c1ee120025e939a1707f8fd09a1266edbf7848eae7b8de7c5909a824cc8"},
 ]

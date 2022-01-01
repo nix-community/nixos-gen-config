@@ -9,15 +9,14 @@ license = "MIT"
 python = "^3.9"
 pyudev = "^0.22.0"
 icecream = "^2.1.1"
-
-#[tool.poetry.dev-dependencies]
-#black = "^21.12b0"
-#flake8 = "^4.0.1"
 psutil = "^5.9.0"
-#mypy = "^0.930"
 
 [tool.poetry.scripts]
 nixos-gen-config = 'nixos_gen_config.main:main'
+
+[tool.poetry.dev-dependencies]
+types-psutil = "^5.8.17"
+types-setuptools = "^57.4.5"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -29,10 +28,8 @@ target_version = ['py39']
 
 [[tool.mypy.overrides]]
 module = [
-    "setuptools",
     "pyudev",
     "icecream",
-    "psutil"
 ]
 ignore_missing_imports = true
 
