@@ -134,10 +134,10 @@ def udev_section(nix_config: NixConfigAttrs, *query: str) -> None:
 
 
 def virt_section(nix_config: NixConfigAttrs) -> None:
-    virtcmd = ""
+    virtcmd = None
     # systemd-detect-virt exits with 1 when virt = none
     try:
-        virtcmd = subprocess.run(["systemd-detect-virt"], check=True, capture_output=True)
+        virtcmd = subprocess.run(["systemd-detect-virt"], check=True, capture_output=True, text=True)
     except subprocess.CalledProcessError:
         # Provide firmware for devices that are not detected by this script,
         # unless we're in a VM/container.
