@@ -18,7 +18,7 @@
           overlays = [ poetry2nix.overlay ];
         };
 
-        python = pkgs.python39;
+        python = pkgs.python310;
         projectDir = ./.;
         overrides = pkgs.poetry2nix.overrides.withDefaults (self: super: {
           # Python dependency overrides go here
@@ -49,11 +49,11 @@
             (pkgs.poetry2nix.mkPoetryEnv {
               inherit python projectDir overrides;
               extraPackages = (ps: with ps; [
-                (toPythonModule (pkgs.util-linux.overrideAttrs (oldAttrs: { nativeBuildInputs = oldAttrs.nativeBuildInputs ++ [ pkgs.python3 ]; })))
+                #(toPythonModule (pkgs.util-linux.overrideAttrs (oldAttrs: { nativeBuildInputs = oldAttrs.nativeBuildInputs ++ [ pkgs.python3 ]; })))
               ]);
             })
-            pkgs.python39Packages.poetry
-          ] ++ (with pkgs.python39Packages; [
+            python.pkgs.poetry
+          ] ++ (with python.pkgs; [
             black
             flake8
             flake8-length

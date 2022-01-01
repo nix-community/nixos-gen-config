@@ -2,7 +2,7 @@ from pathlib import Path
 import subprocess
 
 from icecream import ic
-import pyudev # type: ignore
+import pyudev
 
 from nixos_gen_config import auxiliary_functions as af
 from nixos_gen_config.classes import NixConfigAttrs
