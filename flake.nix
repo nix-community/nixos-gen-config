@@ -35,6 +35,11 @@
           # Non-Python runtime dependencies go here
           buildInputs = with pkgs; [ udev ];
           propagatedBuildInputs = with pkgs; [ udev ];
+          checkInputs = [ pkgs.mypy ];
+
+          checkPhase = ''
+            mypy src/nixos_gen_config
+          '';
         };
 
         defaultPackage = self.packages.${system}.${packageName};
