@@ -1,21 +1,18 @@
 from pathlib import Path
+import subprocess
+
+from icecream import ic
 import pyudev
-from icecream import ic # type: ignore
-from nixos_gen_config.classes import nixConfigAttrs
-from nixos_gen_config import auxiliary_functions  # type: ignore
 
-uniq = auxiliary_functions.uniq
-to_nix_string_list = auxiliary_functions.to_nix_string_list
-to_nix_list = auxiliary_functions.to_nix_list
-to_nix_multi_line_list = auxiliary_functions.to_nix_multi_line_list
-to_nix_true_attr = auxiliary_functions.to_nix_true_attr
-to_nix_false_attr = auxiliary_functions.to_nix_false_attr
+from nixos_gen_config import auxiliary_functions as af
+from nixos_gen_config.classes import NixConfigAttrs
 
-def cpu_section(nix_config: nixConfigAttrs) -> None:
+
+def cpu_section(nix_config: NixConfigAttrs) -> None:
     cpudata = {}
 
     def cpu_info(field):
-        cpuinfo = Path("/proc/cpuinfo").read_text('utf-8')
+        cpuinfo = Path("/proc/cpuinfo").read_text("utf-8")
         for line in cpuinfo.split("\n"):
             # cpuinfo has a empty line at the end
             if line == "":
@@ -39,7 +36,7 @@ def cpu_section(nix_config: nixConfigAttrs) -> None:
         nix_config.kernel_modules.append("kvm-intel")
 
     if Path("/sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors").exists():
-        governors = Path("/sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors").read_text('utf-8')
+        governors = Path("/sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors").read_text("utf-8")
         desired_governors = ["ondemand", "powersave"]
         for d_g in desired_governors:
             if d_g in governors:
@@ -47,8 +44,14 @@ def cpu_section(nix_config: nixConfigAttrs) -> None:
                 break
 
 
+# TODO
+def gpu_section(nix_config: NixConfigAttrs) -> None:
+    video_driver = 0
+    if video_driver:
+        nix_config.attrs.append(f'services.xserver.videoDrivers = [ "{video_driver}" ]')
 
-def udevGet(nix_config: nixConfigAttrs, *query: str) -> None:
+
+def udev_section(nix_config: NixConfigAttrs, *query: str) -> None:
 
     context = pyudev.Context()
 
@@ -58,7 +61,6 @@ def udevGet(nix_config: nixConfigAttrs, *query: str) -> None:
                 fs_type = device.get("ID_FS_TYPE")
                 if fs_type == "zfs_member":
                     fs_label = device.get("ID_FS_LABEL")
-
 
     for device in context.list_devices(subsystem="input"):
         input_type = device.get("ID_INPUT_KEYBOARD")
@@ -129,3 +131,25 @@ def udevGet(nix_config: nixConfigAttrs, *query: str) -> None:
         # NOTE for reviewers: Intel3945ABG and Intel2200BG are included in enableRedistributableFirmware
         # devices that use brcmfmac are not needed to be specified due to the drivers being
         # included in firmwareLinuxNonfree
+
+
+def virt_section(nix_config: NixConfigAttrs) -> None:
+    virtcmd = ""
+    # systemd-detect-virt exits with 1 when virt = none
+    try:
+        virtcmd = subprocess.run(["systemd-detect-virt"], check=True, capture_output=True)
+    except subprocess.CalledProcessError:
+        # Provide firmware for devices that are not detected by this script,
+        # unless we're in a VM/container.
+        nix_config.imports.append('(modulesPath + "/installer/scan/not-detected.nix")')
+
+    if virtcmd:
+        virt = (virtcmd.stdout).strip()
+        if virt == "oracle":
+            nix_config.attrs.append(af.to_nix_true_attr("virtualisation.virtualbox.guest.enable"))
+        if virt == "microsoft":
+            nix_config.attrs.append(af.to_nix_true_attr("virtualisation.hypervGuest.enable"))
+        if virt == "systemd-nspawn":
+            nix_config.attrs.append(af.to_nix_true_attr("boot.isContainer"))
+        if virt in ("qemu", "kvm", "bochs"):
+            nix_config.imports.append('(modulesPath + "/profiles/qemu-quest.nix")')

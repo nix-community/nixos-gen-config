@@ -17,8 +17,8 @@ def process_args():
         "--dir",
         type=Path,
         # NOTE: uncomment
-        # default="/etc/nixos",
-        default="config1",
+        default="/etc/nixos1",
+        # default="config1",
         help="write the configuration files to the directory specified instead of /etc/nixos",
     )
     parser.add_argument(

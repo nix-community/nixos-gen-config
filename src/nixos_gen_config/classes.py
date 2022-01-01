@@ -2,8 +2,9 @@ from dataclasses import dataclass, field
 
 
 @dataclass
-class nixConfigAttrs:
+class NixConfigAttrs:
     attrs: list[str] = field(default_factory=list)
+    fsattrs: list[str] = field(default_factory=list)
     initrd_available_kernel_modules: list[str] = field(default_factory=list)
     initrd_kernel_modules: list[str] = field(default_factory=list)
     kernel_modules: list[str] = field(default_factory=list)

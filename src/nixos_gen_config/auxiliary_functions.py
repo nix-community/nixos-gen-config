@@ -33,7 +33,20 @@ def to_nix_multi_line_list(indent, *args):
     res += f"{indent}]"
     return res
 
+
 def to_nix_true_attr(attr: str):
     return f"{attr} = true;"
+
+
 def to_nix_false_attr(attr: str):
     return f"{attr} = false;"
+
+
+def get_config_dir(out_dir, root_dir) -> str:
+    config_dir = ""
+    if out_dir != "/etc/nixos":
+        config_dir = out_dir
+    if root_dir:
+        config_dir = f"{root_dir}{out_dir}"
+
+    return config_dir

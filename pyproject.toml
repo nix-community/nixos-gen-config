@@ -34,8 +34,11 @@ typeCheckingMode = ['basic']
 [tool.pylint]
 
 [tool.pylint.FORMAT]
-max-line-length = 120
+max-line-length = 130
 disable = [ 'C0114', 'C0115', 'C0116' ]
 #    C0114 (missing-module-docstring)
 #    C0115 (missing-class-docstring)
 #    C0116 (missing-function-docstring)
+
+[tool.pylint.DESIGN]
+max-attributes = 12

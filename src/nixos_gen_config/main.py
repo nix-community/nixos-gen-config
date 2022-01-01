@@ -1,29 +1,25 @@
-from dataclasses import dataclass, field
 import os
 from pathlib import Path
-import subprocess
+import sys
 
 from icecream import ic
 
-from nixos_gen_config import auxiliary_functions
+from nixos_gen_config import auxiliary_functions as af
 from nixos_gen_config.arguments import process_args
-from nixos_gen_config.classes import nixConfigAttrs
+from nixos_gen_config.classes import NixConfigAttrs
 from nixos_gen_config.generate_hw_config import generate_hw_config
-from nixos_gen_config.hardware import cpu_section, udevGet
+from nixos_gen_config.hardware import cpu_section, udev_section, virt_section
 from nixos_gen_config.partitions import get_fs
 
 
 def main():
-    nixConfig = nixConfigAttrs()
-    uniq = auxiliary_functions.uniq
-    to_nix_string_list = auxiliary_functions.to_nix_string_list
-    to_nix_list = auxiliary_functions.to_nix_list
-    to_nix_multi_line_list = auxiliary_functions.to_nix_multi_line_list
-    to_nix_true_attr = auxiliary_functions.to_nix_true_attr
-    to_nix_false_attr = auxiliary_functions.to_nix_false_attr
+    nix_config = NixConfigAttrs()
 
     args = process_args()
+    if not args.debug:
+        ic.disable()
 
+    # out_dir = os.path.abspath(args.dir)
     out_dir = os.path.abspath(args.dir)
     if args.root:
         root_dir = os.path.normpath(args.root)
@@ -33,63 +29,36 @@ def main():
     no_filesystems = args.no_filesystems
     show_hardware_config = args.show_hardware_config
 
-    if not args.debug:
-        ic.disable()
+    config_dir = af.get_config_dir(out_dir, root_dir)
 
-    try:
-        os.mkdir(out_dir)
-    except FileExistsError:
-        pass
-    except OSError as error:
-        print(f"Creation of {out_dir} failed {error}")
+    udev_section(nix_config)
+    virt_section(nix_config)
+    cpu_section(nix_config)
 
-
-    def virt_section(nix_config: nixConfigAttrs) -> None:
-        virtcmd = ""
-        # systemd-detect-virt exits with 1 when virt = none
+    def write_hw_config(nix_config: NixConfigAttrs) -> None:
         try:
-            virtcmd = subprocess.run(["systemd-detect-virt"], capture_output=True, text=True, check=True)
-        except subprocess.CalledProcessError:
-            # Provide firmware for devices that are not detected by this script,
-            # unless we're in a VM/container.
-            nix_config.imports.append('(modulesPath + "/installer/scan/not-detected.nix")')
+            Path(config_dir).mkdir(parents=True, exist_ok=True)
+        except PermissionError:
+            print(f"Creation of {config_dir} failed due to a permission error. run script as root.")
+            sys.exit(1)
+        except OSError as error:
+            print(f"Creation of {out_dir} failed {error}")
 
+        try:
+            with open(f"{config_dir}/hardware-configuration.nix", "w", encoding="utf-8") as t_f:
+                t_f.write(generate_hw_config(nix_config))
+        except PermissionError:
+            print(
+                f"Creation of {config_dir}/hardware-configuration.nix failed due to a permission error. run script as root."
+            )
+            sys.exit(1)
 
-        if virtcmd:
-            virt = (virtcmd.stdout).strip()
-            if virt == "oracle":
-                nix_config.attrs.append(to_nix_true_attr("virtualisation.virtualbox.guest.enable"))
-            if virt == "microsoft":
-                nix_config.attrs.append(to_nix_true_attr("virtualisation.hypervGuest.enable"))
-            if virt == "systemd-nspawn":
-                nix_config.attrs.append(to_nix_true_attr("boot.isContainer"))
-            if virt in ("qemu", "kvm", "bochs"):
-                nix_config.imports.append('(modulesPath + "/profiles/qemu-quest.nix")')
+    get_fs(nix_config, root_dir)
 
-
-    udevGet(nixConfig)
-
-    video_driver = 0
-    if video_driver:
-        nixConfig.attrs.append(f'services.xserver.videoDrivers = [ "{video_driver}" ]')
-
-
-    virt_section(nixConfig)
-
-    cpu_section(nixConfig)
-
-    #gen_hw_file(nixConfig)
-
-    def write_hw_config(nix_config: nixConfigAttrs) -> None:
-        #print(generate_hw_config(nixConfig))
-        with open(f"{root_dir}{out_dir}/hardware-configuration.nix", "w", encoding='utf-8') as t_f:
-            t_f.write(generate_hw_config(nix_config))
-
-
-    get_fs(nixConfig)
-
-    write_hw_config(nixConfig)
-
+    if show_hardware_config:
+        print(generate_hw_config(nix_config))
+    else:
+        write_hw_config(nix_config)
 
 
 if __name__ == "__main__":
