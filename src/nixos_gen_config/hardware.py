@@ -9,9 +9,9 @@ from nixos_gen_config.classes import NixConfigAttrs
 
 
 def cpu_section(nix_config: NixConfigAttrs) -> None:
-    cpudata = {}
+    cpudata: dict[str, str] = {}
 
-    def cpu_info(field):
+    def cpu_info(field: str) -> str:
         cpuinfo = Path("/proc/cpuinfo").read_text("utf-8")
         for line in cpuinfo.split("\n"):
             # cpuinfo has a empty line at the end
@@ -51,16 +51,9 @@ def gpu_section(nix_config: NixConfigAttrs) -> None:
         nix_config.attrs.append(f'services.xserver.videoDrivers = [ "{video_driver}" ]')
 
 
-def udev_section(nix_config: NixConfigAttrs, *query: str) -> None:
+def udev_section(nix_config: NixConfigAttrs) -> None:
 
-    context = pyudev.Context()
-
-    if query:
-        if query[0] == "zfsPartitions":
-            for device in context.list_devices(subsystem="block"):
-                fs_type = device.get("ID_FS_TYPE")
-                if fs_type == "zfs_member":
-                    fs_label = device.get("ID_FS_LABEL")
+    context: pyudev.Context  = pyudev.Context()
 
     for device in context.list_devices(subsystem="input"):
         input_type = device.get("ID_INPUT_KEYBOARD")
@@ -74,17 +67,17 @@ def udev_section(nix_config: NixConfigAttrs, *query: str) -> None:
         pci_driver = device.get("DRIVER")
         model_id = device.get("ID_MODEL_FROM_DATABASE")
         # https://github.com/systemd/systemd/blob/main/hwdb.d/20-pci-classes.hwdb
-        class_filter = [
+        class_filter: list[str] = [
             "USB controller",
             "FireWire (IEEE 1394)",
             "Mass storage controller",
         ]
-        model_dict = {
+        model_dict: dict[str, str] = {
             # for some of these the device loads something that has a driver different
             # to itself
             "Virtio SCSI": "virtio_scsi",
         }
-        driver_overrides = {
+        driver_overrides: dict[str, str] = {
             # xhci_pci has xhci_hcd in deps. xhci_pci will be needed anyways so this keeps the list shorter.
             "xhci_hcd": "xhci_pci",
         }
@@ -101,10 +94,10 @@ def udev_section(nix_config: NixConfigAttrs, *query: str) -> None:
     for device in context.list_devices(subsystem="pci"):
         pci_driver = device.get("DRIVER")
         model_id = device.get("ID_MODEL_FROM_DATABASE")
-        class_filter = [
+        class_filter: list[str] = [ # type: ignore  # mypy error: Name "class_filter" already defined
             "Network controller",
         ]
-        broadcom_sta_list = [
+        broadcom_sta_list: list[str] = [
             "BCM4311",  # https://linux-hardware.org/?id=pci:14e4-4311
             "BCM4360",  # https://linux-hardware.org/?id=pci:14e4-43a0
             "BCM4322",  # https://linux-hardware.org/?id=pci:14e4-432b

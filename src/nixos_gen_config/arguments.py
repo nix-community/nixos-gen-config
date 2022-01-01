@@ -2,7 +2,7 @@ from pathlib import Path
 import argparse
 
 
-def process_args():
+def process_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--root",

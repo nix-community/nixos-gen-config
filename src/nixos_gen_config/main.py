@@ -12,7 +12,7 @@ from nixos_gen_config.hardware import cpu_section, udev_section, virt_section
 from nixos_gen_config.partitions import get_fs
 
 
-def main():
+def main() -> None:
     nix_config = NixConfigAttrs()
 
     args = process_args()

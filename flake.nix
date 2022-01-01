@@ -38,7 +38,7 @@
           checkInputs = [ pkgs.mypy ];
 
           checkPhase = ''
-            mypy src/nixos_gen_config
+            mypy --strict src/nixos_gen_config
           '';
         };
 
