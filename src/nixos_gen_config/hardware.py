@@ -21,22 +21,19 @@ def cpu_section(nix_config: NixConfigAttrs) -> None:
             cpudata[left.strip()] = right.strip()
         return cpudata[field]
 
-    match cpu_info("vendor_id"):
-        case "AuthenticAMD":
-            nix_config.attrs.append(
-                "hardware.cpu.amd.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;"
-            )
-        case "GenuineIntel":
-            nix_config.attrs.append(
-                "hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;"
-            )
+    if cpu_info("vendor_id") == "AuthenticAMD":
+        nix_config.attrs.append(
+            "hardware.cpu.amd.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;"
+        )
+    elif cpu_info("vendor_id") == "GenuineIntel":
+        nix_config.attrs.append(
+            "hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;"
+        )
 
-    for flag in (cpu_info("flags")).split():
-        match flag:
-            case "svm":
-                nix_config.kernel_modules.append("kvm-amd")
-            case "vmx":
-                nix_config.kernel_modules.append("kvm-intel")
+    if "svm" in cpu_info("flags"):
+        nix_config.kernel_modules.append("kvm-amd")
+    elif "vmx" in cpu_info("flags"):
+        nix_config.kernel_modules.append("kvm-intel")
 
     if Path("/sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors").exists():
         governors = Path("/sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors").read_text("utf-8")
@@ -140,12 +137,12 @@ def virt_section(nix_config: NixConfigAttrs) -> None:
         nix_config.imports.append('(modulesPath + "/installer/scan/not-detected.nix")')
 
     if virtcmd:
-        match (virtcmd.stdout).strip():
-            case "oracle":
-                nix_config.attrs.append(af.to_nix_true_attr("virtualisation.virtualbox.guest.enable"))
-            case "microsoft":
-                nix_config.attrs.append(af.to_nix_true_attr("virtualisation.hypervGuest.enable"))
-            case "systemd-nspawn":
-                nix_config.attrs.append(af.to_nix_true_attr("boot.isContainer"))
-            case "qemu" | "kvm" | "bochs":
-                nix_config.imports.append('(modulesPath + "/profiles/qemu-quest.nix")')
+        virt = (virtcmd.stdout).strip()
+        if virt == "oracle":
+            nix_config.attrs.append(af.to_nix_true_attr("virtualisation.virtualbox.guest.enable"))
+        if virt == "microsoft":
+            nix_config.attrs.append(af.to_nix_true_attr("virtualisation.hypervGuest.enable"))
+        if virt == "systemd-nspawn":
+            nix_config.attrs.append(af.to_nix_true_attr("boot.isContainer"))
+        if virt in ("qemu", "kvm", "bochs"):
+            nix_config.imports.append('(modulesPath + "/profiles/qemu-quest.nix")')
