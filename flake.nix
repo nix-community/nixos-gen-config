@@ -68,6 +68,8 @@
             pylint
           ]);
           shellHook = ''
+            # generate stubs with stubgen src/nixos_gen_config -o src/stubs
+            export MYPYPATH=$PWD/src/stubs
             zsh
           '';
         };
