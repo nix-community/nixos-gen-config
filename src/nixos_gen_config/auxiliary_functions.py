@@ -1,22 +1,22 @@
 def uniq(list1: list[str]) -> list[str]:
     uniq_list: list[str] = []
-    for x in list1:
-        if x not in uniq_list:
-            uniq_list.append(x)
+    for item in list1:
+        if item not in uniq_list:
+            uniq_list.append(item)
     return uniq_list
 
 
 def to_nix_string_list(*args: str) -> str:
     res = ""
-    for v in args:
-        res += f' "{v}"'
+    for item in args:
+        res += f' "{item}"'
     return res
 
 
 def to_nix_list(*args: str) -> str:
     res = ""
-    for v in args:
-        res += f" {v}"
+    for item in args:
+        res += f" {item}"
     return res
 
 
@@ -25,11 +25,11 @@ def to_nix_multi_line_list(indent: str, *args: str) -> str:
         return " [ ]"
     res = f"\n{indent}[ "
     first = 1
-    for v in args:
+    for item in args:
         if not first:
             res += f"{indent}  "
         first = 0
-        res += f"{v}\n"
+        res += f"{item}\n"
     res += f"{indent}]"
     return res
 

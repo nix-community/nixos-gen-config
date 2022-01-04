@@ -2,9 +2,10 @@
   description = "Python application managed with poetry2nix";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    #nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/master";
     poetry2nix = {
-      url = "github:artturin/poetry2nix/addoverrides1";
+      url = "github:nix-community/poetry2nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     flake-utils = { url = "github:numtide/flake-utils"; };
@@ -31,13 +32,13 @@
         packages.${packageName} = pkgs.poetry2nix.mkPoetryApplication {
           inherit python projectDir overrides;
           preBuild = ''
-        '';
+          '';
           # Non-Python runtime dependencies go here
           buildInputs = with pkgs; [ udev ];
           propagatedBuildInputs = with pkgs; [ udev ];
-          checkInputs = [ pkgs.mypy ];
+          checkInputs = with pkgs; [ mypy ];
 
-          checkPhase = ''
+          preCheck = ''
             mypy --strict src/nixos_gen_config
           '';
         };
@@ -46,13 +47,16 @@
 
         devShell = pkgs.mkShell {
           buildInputs = [
+            pkgs.pyright
             (pkgs.poetry2nix.mkPoetryEnv {
               inherit python projectDir overrides;
+              editablePackageSources = {
+                  packageName = ./src;
+              };
               extraPackages = (ps: with ps; [
                 #(toPythonModule (pkgs.util-linux.overrideAttrs (oldAttrs: { nativeBuildInputs = oldAttrs.nativeBuildInputs ++ [ pkgs.python3 ]; })))
               ]);
             })
-            python.pkgs.poetry
           ] ++ (with python.pkgs; [
             black
             flake8
