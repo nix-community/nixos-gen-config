@@ -1,7 +1,7 @@
 from nixos_gen_config.classes import NixConfigAttrs as NixConfigAttrs
-from typing import Any
+from string import Template
 
-fsTemplate: Any
-special_fs: Any
+fsTemplate: Template
+special_fs: list[str]
 
 def get_fs(nix_config: NixConfigAttrs, root_dir: str) -> None: ...

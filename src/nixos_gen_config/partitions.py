@@ -5,7 +5,7 @@ import pyudev
 
 from nixos_gen_config.classes import NixConfigAttrs
 
-fsTemplate = Template(
+fsTemplate: Template = Template(
     """
   fileSystems."${mountpoint}" =
     { device = "${device}";
@@ -14,13 +14,13 @@ fsTemplate = Template(
 """
 )
 
-special_fs = ["/proc", "/dev", "/sys", "/run", "/var/lib/nfs/rpc_pipefs"]
+special_fs: list[str] = ["/proc", "/dev", "/sys", "/run", "/var/lib/nfs/rpc_pipefs"]
 
 
 def get_fs(nix_config: NixConfigAttrs, root_dir: str) -> None:
 
-    context = pyudev.Context()
-    devices = context.list_devices(subsystem="block")
+    context: pyudev.Context = pyudev.Context()
+    devices: pyudev.Device = context.list_devices(subsystem="block")
 
     for part in psutil.disk_partitions(all=True):
         if not part.mountpoint.startswith(root_dir):
