@@ -42,6 +42,7 @@
             export MYPYPATH=$PWD/src
             mypy --strict src/nixos_gen_config
             mypy --strict tests
+            pytest
           '';
         };
 
