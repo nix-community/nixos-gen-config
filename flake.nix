@@ -48,6 +48,7 @@
         devShell = pkgs.mkShell {
           buildInputs = [
             pkgs.pyright
+            (pkgs.poetry.override { python = python; })
             (pkgs.poetry2nix.mkPoetryEnv {
               inherit python projectDir overrides;
               editablePackageSources = {
