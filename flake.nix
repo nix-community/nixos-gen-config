@@ -38,8 +38,10 @@
           propagatedBuildInputs = with pkgs; [ udev ];
           checkInputs = with pkgs; [ mypy ];
 
-          preCheck = ''
+          checkPhase = ''
+            export MYPYPATH=$PWD/src/stubs
             mypy --strict src/nixos_gen_config
+            mypy --strict tests
           '';
         };
 
