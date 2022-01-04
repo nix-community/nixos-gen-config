@@ -39,7 +39,7 @@
           checkInputs = with pkgs; [ mypy ];
 
           checkPhase = ''
-            export MYPYPATH=$PWD/src/stubs
+            export MYPYPATH=$PWD/src
             mypy --strict src/nixos_gen_config
             mypy --strict tests
           '';
@@ -68,8 +68,7 @@
             pylint
           ]);
           shellHook = ''
-            # generate stubs with stubgen src/nixos_gen_config -o src/stubs
-            export MYPYPATH=$PWD/src/stubs
+            export MYPYPATH=$PWD/src
             zsh
           '';
         };
