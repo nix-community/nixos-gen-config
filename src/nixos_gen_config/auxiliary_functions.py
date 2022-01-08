@@ -1,3 +1,6 @@
+from pathlib import Path
+
+
 def uniq(list1: list[str]) -> list[str]:
     uniq_list: list[str] = []
     for item in list1:
@@ -42,11 +45,14 @@ def to_nix_false_attr(attr: str) -> str:
     return f"{attr} = false;"
 
 
-def get_config_dir(out_dir: str, root_dir: str) -> str:
-    config_dir = ""
-    if out_dir != "/etc/nixos":
-        config_dir = out_dir
-    if root_dir:
-        config_dir = f"{root_dir}{out_dir}"
+# '--root /mnt --dir thisdir' should save the config to
+# $PWD/thisdir instead of /mnt/thisdir
+# the perl script saved it to /mnt/thisdir and i think thats a bug
+def get_config_dir(out_dir: Path, root_dir: Path) -> Path:
+    config_dir: Path = out_dir
+    if root_dir and out_dir == Path("/etc/nixos"):
+        # Allow paths to be joined without worrying about a leading slash
+        # https://bugs.python.org/issue44452
+        config_dir = root_dir.joinpath(str(out_dir).lstrip("/"))
 
     return config_dir

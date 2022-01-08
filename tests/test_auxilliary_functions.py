@@ -1,3 +1,4 @@
+from pathlib import Path
 import nixos_gen_config.auxiliary_functions as af
 
 
@@ -53,15 +54,28 @@ def test_to_nix_false_attr() -> None:
 
 
 def test_config_dir_different_out() -> None:
-    out_dir: str = "/etc/notnixos"
-    root_dir: str = "/notmnt"
+    out_dir = Path("a_out_dir")
+    root_dir = Path("/notmnt")
     returned = af.get_config_dir(out_dir, root_dir)
-    assert returned == "/notmnt/etc/notnixos"
+    assert returned == Path("a_out_dir")
 
 
-def test_config_dir_default() -> None:
-    out_dir: str = "/etc/nixos"
-    root_dir: str = "/mnt"
+def test_config_dir_mnt_root_default_out() -> None:
+    out_dir = Path("/etc/nixos")
+    root_dir = Path("/mnt")
     returned = af.get_config_dir(out_dir, root_dir)
-    print(returned)
-    assert returned == "/mnt/etc/nixos"
+    assert returned == Path("/mnt/etc/nixos")
+
+
+def test_config_dir_no_root_default_out() -> None:
+    out_dir = Path("/etc/nixos")
+    root_dir = Path("/")
+    returned = af.get_config_dir(out_dir, root_dir)
+    assert returned == Path("/etc/nixos")
+
+
+def test_config_dir_no_root_different_out() -> None:
+    out_dir = Path("/etc/notnixos")
+    root_dir = Path("/")
+    returned = af.get_config_dir(out_dir, root_dir)
+    assert returned == Path("/etc/notnixos")

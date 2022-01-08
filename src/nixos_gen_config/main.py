@@ -19,12 +19,11 @@ def main() -> None:
     if not args.debug:
         ic.disable()
 
-    # out_dir = os.path.abspath(args.dir)
-    out_dir = os.path.abspath(args.dir)
+    out_dir = Path(args.dir).resolve()
     if args.root:
-        root_dir = os.path.normpath(args.root)
+        root_dir = Path(args.root).resolve()
     else:
-        root_dir = ""
+        root_dir = Path("/")
     force = args.force
     no_filesystems = args.no_filesystems
     show_hardware_config = args.show_hardware_config

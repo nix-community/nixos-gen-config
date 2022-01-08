@@ -94,6 +94,14 @@ def test_bcache() -> None:
     assert "bcache" in nix_config.initrd_available_kernel_modules
 
 
+def test_bcache_false() -> None:
+    nix_config = NixConfigAttrs()
+    pyudev_device = FakeDevice()
+    pyudev_device.ID_FS_TYPE = "ext4"
+    hardware.bcache(nix_config, pyudev_device)
+    assert "bcache" not in nix_config.initrd_available_kernel_modules
+
+
 def test_virt_section() -> None:
     nix_config = NixConfigAttrs()
     with patch("subprocess.run") as subprocess_mock:

@@ -1,3 +1,4 @@
+from pathlib import Path
 from string import Template
 
 import psutil
@@ -17,13 +18,13 @@ fsTemplate: Template = Template(
 special_fs: list[str] = ["/proc", "/dev", "/sys", "/run", "/var/lib/nfs/rpc_pipefs"]
 
 
-def get_fs(nix_config: NixConfigAttrs, root_dir: str) -> None:
+def get_fs(nix_config: NixConfigAttrs, root_dir: Path) -> None:
 
     context: pyudev.Context = pyudev.Context()
     devices: pyudev.Device = context.list_devices(subsystem="block")
 
     for part in psutil.disk_partitions(all=True):
-        if not part.mountpoint.startswith(root_dir):
+        if not part.mountpoint.startswith(str(root_dir)):
             # print(part.mountpoint)
             continue
 
