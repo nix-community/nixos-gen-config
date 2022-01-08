@@ -30,7 +30,7 @@ def cpu_section(nix_config: NixConfigAttrs) -> None:
 
     if "svm" in cpu_info("flags"):
         nix_config.kernel_modules.append("kvm-amd")
-    elif "vmx" in cpu_info("flags"):
+    if "vmx" in cpu_info("flags"):
         nix_config.kernel_modules.append("kvm-intel")
 
     if Path("/sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors").exists():

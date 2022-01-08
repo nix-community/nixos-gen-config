@@ -19,6 +19,8 @@ types-psutil = "^5.8.17"
 types-setuptools = "^57.4.5"
 pytest = "^6.2.5"
 pytest-mock = "^3.6.1"
+pytest-cov = "^3.0.0"
+coverage = {extras = ["toml"], version = "^6.2"}
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -44,16 +46,43 @@ strict = true
 
 [tool.pyright]
 strict = ['*']
-#typeCheckingMode = ['basic']
 
-[tool.pylint]
+[tool.pylint.master]
+init-hook = "import sys; sys.path.append('src')"
+
+[tool.pylint.basic]
+# Allow shorter and longer variable names than the default.
+argument-rgx = "[a-z_][a-z0-9_]*$"
+attr-rgx = "[a-z_][a-z0-9_]*$"
+variable-rgx = "[a-z_][a-z0-9_]*$"
 
 [tool.pylint.FORMAT]
 max-line-length = 130
-disable = [ 'C0114', 'C0115', 'C0116' ]
+#disable = [ 'C0114', 'C0115', 'C0116' ]
 #    C0114 (missing-module-docstring)
 #    C0115 (missing-class-docstring)
 #    C0116 (missing-function-docstring)
 
 [tool.pylint.DESIGN]
 max-attributes = 12
+
+[tool.pylint.messages_control]
+disable = [
+    # Many functions (e.g. callbacks) will naturally have unused arguments.
+    "unused-argument",
+
+    # Disable failure for TODO items in the codebase (code will always have TODOs).
+    "fixme",
+
+    "missing-docstring"
+]
+
+[tool.coverage.paths]
+source = ["src"]
+
+[tool.coverage.run]
+branch = true
+source = ["nixos_gen_config"]
+
+[tool.coverage.report]
+show_missing = true

@@ -42,7 +42,7 @@
             export MYPYPATH=$PWD/src
             mypy --strict src/nixos_gen_config
             mypy --strict tests
-            pytest
+            pytest -sv
           '';
         };
 
@@ -70,7 +70,7 @@
           ]);
           shellHook = ''
             export MYPYPATH=$PWD/src
-            zsh
+            exec zsh
           '';
         };
 
