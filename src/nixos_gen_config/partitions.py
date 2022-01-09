@@ -14,9 +14,7 @@ fsTemplate: Template = Template(
     };
 """
 )
-
 special_fs: list[str] = ["/proc", "/dev", "/sys", "/run", "/var/lib/nfs/rpc_pipefs"]
-
 
 def get_fs(nix_config: NixConfigAttrs, root_dir: Path) -> None:
 
@@ -25,22 +23,19 @@ def get_fs(nix_config: NixConfigAttrs, root_dir: Path) -> None:
 
     for part in psutil.disk_partitions(all=True):
         if not part.mountpoint.startswith(str(root_dir)):
-            # print(part.mountpoint)
             continue
 
         if [x for x in special_fs if x in part.mountpoint]:
             continue
 
-        stable_device_path = ""
+        stable_device_path: str = ""
         for device in devices:
             if device.get("DEVNAME") == part.device:
                 uuid = device.get("ID_FS_UUID")
                 stable_device_path = f"/dev/disk/by-uuid/{uuid}"
 
-        if stable_device_path:
-            device = stable_device_path
-        else:
-            device = part.device
+        # if stable_device_path then use that
+        device_name: str = stable_device_path or part.device
 
-        f_s = fsTemplate.substitute(mountpoint=part.mountpoint, device=device, filesystem=part.fstype)
+        f_s = fsTemplate.substitute(mountpoint=part.mountpoint, device=device_name, filesystem=part.fstype)
         nix_config.fsattrs.append(f_s)
