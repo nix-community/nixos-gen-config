@@ -1,4 +1,7 @@
 from pathlib import Path
+
+import pytest
+
 import nixos_gen_config.auxiliary_functions as af
 
 
@@ -53,29 +56,15 @@ def test_to_nix_false_attr() -> None:
     assert returned == "boot.isContainer = false;"
 
 
-def test_config_dir_different_out() -> None:
-    out_dir = Path("a_out_dir")
-    root_dir = Path("/notmnt")
+conf_dir_testdata = [
+    (Path("a_out_dir"), Path("/notmnt"), Path("a_out_dir")),
+    (Path("/etc/nixos"), Path("/mnt"), Path("/mnt/etc/nixos")),
+    (Path("/etc/nixos"), Path("/"), Path("/etc/nixos")),
+    (Path("/etc/notnixos"), Path("/"), Path("/etc/notnixos")),
+]
+
+
+@pytest.mark.parametrize("out_dir, root_dir, expected", conf_dir_testdata)
+def test_get_config_dir(out_dir: Path, root_dir: Path, expected: Path) -> None:
     returned = af.get_config_dir(out_dir, root_dir)
-    assert returned == Path("a_out_dir")
-
-
-def test_config_dir_mnt_root_default_out() -> None:
-    out_dir = Path("/etc/nixos")
-    root_dir = Path("/mnt")
-    returned = af.get_config_dir(out_dir, root_dir)
-    assert returned == Path("/mnt/etc/nixos")
-
-
-def test_config_dir_no_root_default_out() -> None:
-    out_dir = Path("/etc/nixos")
-    root_dir = Path("/")
-    returned = af.get_config_dir(out_dir, root_dir)
-    assert returned == Path("/etc/nixos")
-
-
-def test_config_dir_no_root_different_out() -> None:
-    out_dir = Path("/etc/notnixos")
-    root_dir = Path("/")
-    returned = af.get_config_dir(out_dir, root_dir)
-    assert returned == Path("/etc/notnixos")
+    assert returned == expected

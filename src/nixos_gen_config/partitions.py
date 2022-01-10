@@ -16,6 +16,7 @@ fsTemplate: Template = Template(
 )
 special_fs: list[str] = ["/proc", "/dev", "/sys", "/run", "/var/lib/nfs/rpc_pipefs"]
 
+
 def get_fs(nix_config: NixConfigAttrs, root_dir: Path) -> None:
 
     context: pyudev.Context = pyudev.Context()

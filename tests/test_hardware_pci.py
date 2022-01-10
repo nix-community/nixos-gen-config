@@ -8,23 +8,8 @@ import pyudev
 from nixos_gen_config.classes import NixConfigAttrs
 from nixos_gen_config.hardware import pci
 
-TEST_ROOT = Path(__file__).parent.resolve()
-
-
-@dataclass
-class FakeDevice:
-    ID_VENDOR_ID: str = ""
-    ID_MODEL_ID: str = ""
-    ID_MODEL_FROM_DATABASE: str = ""
-    ID_FS_TYPE: str = ""
-    ID_PCI_CLASS_FROM_DATABASE: str = ""
-    ID_PCI_SUBCLASS_FROM_DATABASE: str = ""
-    DRIVER: str = ""
-    ID_INPUT_KEYBOARD: str = ""
-    ID_USB_DRIVER: str = ""
-
-    def get(self, attribute: str) -> pyudev.Attributes:
-        return getattr(self, attribute)
+from .conftest import FakeDevice
+from .conftest import Helpers
 
 
 def test_pci_usb_controller() -> None:

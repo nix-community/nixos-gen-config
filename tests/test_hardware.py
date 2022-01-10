@@ -1,38 +1,23 @@
 # pylint: disable=invalid-name
 # ^ pyudev names ID_VENDOR_ID etc
 from dataclasses import dataclass
+from pathlib import Path
 import subprocess
 from unittest.mock import patch
-from pathlib import Path
 
 import pyudev
 
 from nixos_gen_config import hardware
 from nixos_gen_config.classes import NixConfigAttrs
 
-TEST_ROOT = Path(__file__).parent.resolve()
-
-
-@dataclass
-class FakeDevice:
-    ID_VENDOR_ID: str = ""
-    ID_MODEL_ID: str = ""
-    ID_MODEL_FROM_DATABASE: str = ""
-    ID_FS_TYPE: str = ""
-    ID_PCI_CLASS_FROM_DATABASE: str = ""
-    ID_PCI_SUBCLASS_FROM_DATABASE: str = ""
-    DRIVER: str = ""
-    ID_INPUT_KEYBOARD: str = ""
-    ID_USB_DRIVER: str = ""
-
-    def get(self, attribute: str) -> pyudev.Attributes:
-        return getattr(self, attribute)
+from .conftest import FakeDevice
+from .conftest import Helpers
 
 
 def test_cpu_section_amd() -> None:
     nix_config = NixConfigAttrs()
-    cpuinfo = Path(f"{TEST_ROOT}/assets/cpu_info_amd").read_text("utf-8")
-    governors = Path(f"{TEST_ROOT}/assets/available_governors").read_text("utf-8")
+    cpuinfo = Helpers.read_asset("cpu_info_amd")
+    governors = Helpers.read_asset("available_governors")
 
     def fake_read(path: str, encoding: str) -> str:
         if str(path) == "/proc/cpuinfo":
@@ -55,8 +40,8 @@ def test_cpu_section_amd() -> None:
 
 def test_cpu_section_intel() -> None:
     nix_config = NixConfigAttrs()
-    cpuinfo = Path(f"{TEST_ROOT}/assets/cpu_info_intel").read_text("utf-8")
-    governors = Path(f"{TEST_ROOT}/assets/available_governors").read_text("utf-8")
+    cpuinfo = Helpers.read_asset("cpu_info_intel")
+    governors = Helpers.read_asset("available_governors")
 
     def fake_read(path: str, encoding: str) -> str:
         if str(path) == "/proc/cpuinfo":
