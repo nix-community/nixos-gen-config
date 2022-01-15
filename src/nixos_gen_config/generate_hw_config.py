@@ -32,11 +32,11 @@ hwConfigTemplate: Template = Template(
 def generate_hw_config(nix_config: NixConfigAttrs) -> str:
     hw_config_replaced = hwConfigTemplate.substitute(
         imports=to_nix_multi_line_list("    ", *nix_config.imports),
-        i_a_k_m=to_nix_string_list(*(uniq(nix_config.initrd_available_kernel_modules))),
-        i_k_m=to_nix_string_list(*(uniq(nix_config.initrd_kernel_modules))),
-        k_m=to_nix_string_list(*(uniq(nix_config.kernel_modules))),
-        m_p=to_nix_list(*(uniq(nix_config.module_packages))),
-        f_p=to_nix_list(*(uniq(nix_config.firmware_packages))),
+        i_a_k_m=nix_config.get_string("initrd_available_kernel_modules"),
+        i_k_m=nix_config.get_string("initrd_kernel_modules"),
+        k_m=nix_config.get_string("kernel_modules"),
+        m_p=nix_config.get_string("module_packages"),
+        f_p=nix_config.get_string("firmware_packages"),
     )
     for attr in uniq(nix_config.attrs):
         hw_config_replaced = hw_config_replaced + "  " + attr + "\n"

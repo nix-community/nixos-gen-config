@@ -55,7 +55,7 @@
             (pkgs.poetry2nix.mkPoetryEnv {
               inherit python projectDir overrides;
               editablePackageSources = {
-                  packageName = ./src;
+                packageName = ./src;
               };
               extraPackages = (ps: with ps; [
                 #(toPythonModule (pkgs.util-linux.overrideAttrs (oldAttrs: { nativeBuildInputs = oldAttrs.nativeBuildInputs ++ [ pkgs.python3 ]; })))

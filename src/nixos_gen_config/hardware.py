@@ -1,7 +1,6 @@
-from pathlib import Path
 import subprocess
+from pathlib import Path
 
-from icecream import ic
 import pyudev
 
 from nixos_gen_config import auxiliary_functions as af

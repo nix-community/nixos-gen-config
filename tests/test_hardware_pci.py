@@ -1,15 +1,9 @@
 # pylint: disable=invalid-name
 # ^ pyudev names ID_VENDOR_ID etc
-from dataclasses import dataclass
-from pathlib import Path
-
-import pyudev
-
 from nixos_gen_config.classes import NixConfigAttrs
 from nixos_gen_config.hardware import pci
 
 from .conftest import FakeDevice
-from .conftest import Helpers
 
 
 def test_pci_usb_controller() -> None:

@@ -1,17 +1,13 @@
 # pylint: disable=invalid-name
 # ^ pyudev names ID_VENDOR_ID etc
-from dataclasses import dataclass
-from pathlib import Path
 import subprocess
+from pathlib import Path
 from unittest.mock import patch
-
-import pyudev
 
 from nixos_gen_config import hardware
 from nixos_gen_config.classes import NixConfigAttrs
 
-from .conftest import FakeDevice
-from .conftest import Helpers
+from .conftest import FakeDevice, Helpers
 
 
 def test_cpu_section_amd() -> None:
