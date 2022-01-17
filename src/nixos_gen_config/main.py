@@ -10,6 +10,7 @@ from nixos_gen_config.classes import NixConfigAttrs
 from nixos_gen_config.generate_hw_config import generate_hw_config
 from nixos_gen_config.hardware import cpu_section, udev_section, virt_section
 from nixos_gen_config.partitions import get_fs
+from nixos_gen_config.write_config import write_hw_config
 
 
 def main() -> None:
@@ -24,7 +25,7 @@ def main() -> None:
         root_dir = Path(args.root).resolve()
     else:
         root_dir = Path("/")
-    force = args.force
+    overwrite_configuration = args.force
     no_filesystems = args.no_filesystems
     show_hardware_config = args.show_hardware_config
 
@@ -34,30 +35,13 @@ def main() -> None:
     virt_section(nix_config)
     cpu_section(nix_config)
 
-    def write_hw_config(nix_config: NixConfigAttrs) -> None:
-        try:
-            Path(config_dir).mkdir(parents=True, exist_ok=True)
-        except PermissionError:
-            print(f"Creation of {config_dir} failed due to a permission error. run script as root.")
-            sys.exit(1)
-        except OSError as error:
-            print(f"Creation of {out_dir} failed {error}")
-
-        try:
-            with open(f"{config_dir}/hardware-configuration.nix", "w", encoding="utf-8") as t_f:
-                t_f.write(generate_hw_config(nix_config))
-        except PermissionError:
-            print(
-                f"Creation of {config_dir}/hardware-configuration.nix failed due to a permission error. run script as root."
-            )
-            sys.exit(1)
-
-    get_fs(nix_config, root_dir)
+    if not no_filesystems:
+        get_fs(nix_config, root_dir)
 
     if show_hardware_config:
         print(generate_hw_config(nix_config))
     else:
-        write_hw_config(nix_config)
+        write_hw_config(nix_config, config_dir)
 
 
 if __name__ == "__main__":
