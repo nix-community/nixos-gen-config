@@ -17,44 +17,44 @@ def cpu_info(field: str) -> str:
     return cpudata[field]
 
 
-def cpu_section(nix_config: NixConfigAttrs) -> None:
+def cpu_section(nix_hw_config: NixConfigAttrs) -> None:
     if cpu_info("vendor_id") == "AuthenticAMD":
-        nix_config.attrs.append(
+        nix_hw_config.attrs.append(
             "hardware.cpu.amd.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;"
         )
     elif cpu_info("vendor_id") == "GenuineIntel":
-        nix_config.attrs.append(
+        nix_hw_config.attrs.append(
             "hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;"
         )
 
     if "svm" in cpu_info("flags"):
-        nix_config.kernel_modules.append("kvm-amd")
+        nix_hw_config.kernel_modules.append("kvm-amd")
     if "vmx" in cpu_info("flags"):
-        nix_config.kernel_modules.append("kvm-intel")
+        nix_hw_config.kernel_modules.append("kvm-intel")
 
     if Path("/sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors").exists():
         governors = Path("/sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors").read_text("utf-8")
         desired_governors = ["ondemand", "powersave"]
         for d_g in desired_governors:
             if d_g in governors:
-                nix_config.attrs.append(f'powerManagement.cpuFreqGovernor = lib.mkDefault "{d_g}";')
+                nix_hw_config.attrs.append(f'powerManagement.cpuFreqGovernor = lib.mkDefault "{d_g}";')
                 break
 
 
 # TODO
-def gpu_section(nix_config: NixConfigAttrs) -> None:
+def gpu_section(nix_hw_config: NixConfigAttrs) -> None:
     video_driver = 0
     if video_driver:
-        nix_config.attrs.append(f'services.xserver.videoDrivers = [ "{video_driver}" ]')
+        nix_hw_config.attrs.append(f'services.xserver.videoDrivers = [ "{video_driver}" ]')
 
 
-def usb_keyboard(nix_config: NixConfigAttrs, device: pyudev.Device) -> None:
+def usb_keyboard(nix_hw_config: NixConfigAttrs, device: pyudev.Device) -> None:
     usb_driver: str
     if device.get("ID_INPUT_KEYBOARD") and (usb_driver := device.get("ID_USB_DRIVER")):
-        nix_config.initrd_available_kernel_modules.append(usb_driver)
+        nix_hw_config.initrd_available_kernel_modules.append(usb_driver)
 
 
-def pci(nix_config: NixConfigAttrs, device: pyudev.Device) -> None:
+def pci(nix_hw_config: NixConfigAttrs, device: pyudev.Device) -> None:
     pci_class: str = device.get("ID_PCI_CLASS_FROM_DATABASE")
     pci_id: str = device.get("ID_PCI_SUBCLASS_FROM_DATABASE")
     pci_driver: str = device.get("DRIVER")
@@ -77,15 +77,15 @@ def pci(nix_config: NixConfigAttrs, device: pyudev.Device) -> None:
         if any(filter in (pci_class, pci_id) for filter in class_filter):
             if pci_driver in list(driver_overrides):
                 pci_driver = driver_overrides[pci_driver]
-            nix_config.initrd_available_kernel_modules.append(pci_driver)
+            nix_hw_config.initrd_available_kernel_modules.append(pci_driver)
 
     model_id: str
     if model_id := device.get("ID_MODEL_FROM_DATABASE"):
         if any(filter in model_id for filter in model_dict):
-            nix_config.initrd_available_kernel_modules.append(model_dict[model_id])
+            nix_hw_config.initrd_available_kernel_modules.append(model_dict[model_id])
 
 
-def wifi(nix_config: NixConfigAttrs, device: pyudev.Device) -> None:
+def wifi(nix_hw_config: NixConfigAttrs, device: pyudev.Device) -> None:
     broadcom_sta_list: list[str] = [
         "BCM4311",  # https://linux-hardware.org/?id=pci:14e4-4311
         "BCM4360",  # https://linux-hardware.org/?id=pci:14e4-43a0
@@ -108,34 +108,34 @@ def wifi(nix_config: NixConfigAttrs, device: pyudev.Device) -> None:
     model_id: str
     if model_id := device.get("ID_MODEL_FROM_DATABASE"):
         if any(filter in model_id for filter in broadcom_sta_list):
-            nix_config.module_packages.append("config.boot.kernelPackages.broadcom_sta")
-            nix_config.kernel_modules.append("wl")
+            nix_hw_config.module_packages.append("config.boot.kernelPackages.broadcom_sta")
+            nix_hw_config.kernel_modules.append("wl")
 
     # NOTE for reviewers: Intel3945ABG and Intel2200BG are included in enableRedistributableFirmware
     # devices that use brcmfmac are not needed to be specified due to the drivers being
     # included in firmwareLinuxNonfree
 
 
-def bcache(nix_config: NixConfigAttrs, device: pyudev.Device) -> None:
+def bcache(nix_hw_config: NixConfigAttrs, device: pyudev.Device) -> None:
     if device.get("ID_FS_TYPE") == "bcache":
-        nix_config.initrd_available_kernel_modules.append("bcache")
+        nix_hw_config.initrd_available_kernel_modules.append("bcache")
 
 
-def udev_section(nix_config: NixConfigAttrs) -> None:
+def udev_section(nix_hw_config: NixConfigAttrs) -> None:
     context: pyudev.Context = pyudev.Context()
     device: pyudev.Device
     for device in context.list_devices(subsystem="pci"):
-        wifi(nix_config, device)
-        pci(nix_config, device)
+        wifi(nix_hw_config, device)
+        pci(nix_hw_config, device)
 
     for device in context.list_devices(subsystem="block"):
-        bcache(nix_config, device)
+        bcache(nix_hw_config, device)
 
     for device in context.list_devices(subsystem="input"):
-        usb_keyboard(nix_config, device)
+        usb_keyboard(nix_hw_config, device)
 
 
-def virt_section(nix_config: NixConfigAttrs) -> None:
+def virt_section(nix_hw_config: NixConfigAttrs) -> None:
     virtcmd = None
     # systemd-detect-virt exits with 1 when virt = none
     try:
@@ -143,15 +143,15 @@ def virt_section(nix_config: NixConfigAttrs) -> None:
     except subprocess.CalledProcessError:
         # Provide firmware for devices that are not detected by this script,
         # unless we're in a VM/container.
-        nix_config.imports.append('(modulesPath + "/installer/scan/not-detected.nix")')
+        nix_hw_config.imports.append('(modulesPath + "/installer/scan/not-detected.nix")')
 
     if virtcmd:
         virt: str = (virtcmd.stdout).strip()
         if virt == "oracle":
-            nix_config.attrs.append(af.to_nix_true_attr("virtualisation.virtualbox.guest.enable"))
+            nix_hw_config.attrs.append(af.to_nix_true_attr("virtualisation.virtualbox.guest.enable"))
         if virt == "microsoft":
-            nix_config.attrs.append(af.to_nix_true_attr("virtualisation.hypervGuest.enable"))
+            nix_hw_config.attrs.append(af.to_nix_true_attr("virtualisation.hypervGuest.enable"))
         if virt == "systemd-nspawn":
-            nix_config.attrs.append(af.to_nix_true_attr("boot.isContainer"))
+            nix_hw_config.attrs.append(af.to_nix_true_attr("boot.isContainer"))
         if virt in ("qemu", "kvm", "bochs"):
-            nix_config.imports.append('(modulesPath + "/profiles/qemu-quest.nix")')
+            nix_hw_config.imports.append('(modulesPath + "/profiles/qemu-quest.nix")')

@@ -14,7 +14,7 @@ from nixos_gen_config.write_config import write_hw_config
 
 
 def main() -> None:
-    nix_config = NixConfigAttrs()
+    nix_hw_config = NixConfigAttrs()
 
     args = process_args()
     if not args.debug:
@@ -31,17 +31,17 @@ def main() -> None:
 
     config_dir = af.get_config_dir(out_dir, root_dir)
 
-    udev_section(nix_config)
-    virt_section(nix_config)
-    cpu_section(nix_config)
+    udev_section(nix_hw_config)
+    virt_section(nix_hw_config)
+    cpu_section(nix_hw_config)
 
     if not no_filesystems:
-        get_fs(nix_config, root_dir)
+        get_fs(nix_hw_config, root_dir)
 
     if show_hardware_config:
-        print(generate_hw_config(nix_config))
+        print(generate_hw_config(nix_hw_config))
     else:
-        write_hw_config(nix_config, config_dir)
+        write_hw_config(nix_hw_config, config_dir)
 
 
 if __name__ == "__main__":

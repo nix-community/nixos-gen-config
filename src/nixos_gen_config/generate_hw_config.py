@@ -29,19 +29,19 @@ hwConfigTemplate: Template = Template(
 )
 
 
-def generate_hw_config(nix_config: NixConfigAttrs) -> str:
+def generate_hw_config(nix_hw_config: NixConfigAttrs) -> str:
     hw_config_replaced = hwConfigTemplate.substitute(
-        imports=to_nix_multi_line_list("    ", *nix_config.imports),
-        i_a_k_m=nix_config.get_string("initrd_available_kernel_modules"),
-        i_k_m=nix_config.get_string("initrd_kernel_modules"),
-        k_m=nix_config.get_string("kernel_modules"),
-        m_p=nix_config.get_string("module_packages"),
-        f_p=nix_config.get_string("firmware_packages"),
+        imports=to_nix_multi_line_list("    ", *nix_hw_config.imports),
+        i_a_k_m=nix_hw_config.get_string("initrd_available_kernel_modules"),
+        i_k_m=nix_hw_config.get_string("initrd_kernel_modules"),
+        k_m=nix_hw_config.get_string("kernel_modules"),
+        m_p=nix_hw_config.get_string("module_packages"),
+        f_p=nix_hw_config.get_string("firmware_packages"),
     )
-    for attr in uniq(nix_config.attrs):
+    for attr in uniq(nix_hw_config.attrs):
         hw_config_replaced = hw_config_replaced + "  " + attr + "\n"
 
-    for fsattr in uniq(nix_config.fsattrs):
+    for fsattr in uniq(nix_hw_config.fsattrs):
         hw_config_replaced = hw_config_replaced + fsattr
     hw_config_replaced = hw_config_replaced.rstrip()
 

@@ -26,7 +26,7 @@ def get_stable_device_path(devices: pyudev.Device, part_device: str) -> str:
     return stable_device_path
 
 
-def get_fs(nix_config: NixConfigAttrs, root_dir: Path) -> None:
+def get_fs(nix_hw_config: NixConfigAttrs, root_dir: Path) -> None:
 
     context: pyudev.Context = pyudev.Context()
     devices: pyudev.Device = context.list_devices(subsystem="block")
@@ -44,4 +44,4 @@ def get_fs(nix_config: NixConfigAttrs, root_dir: Path) -> None:
         device_name: str = stable_device_path or part.device
 
         f_s = fsTemplate.substitute(mountpoint=part.mountpoint, device=device_name, filesystem=part.fstype)
-        nix_config.fsattrs.append(f_s)
+        nix_hw_config.fsattrs.append(f_s)

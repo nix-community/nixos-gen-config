@@ -11,7 +11,7 @@ from .conftest import FakeDevice, Helpers
 
 
 def test_cpu_section_amd() -> None:
-    nix_config = NixConfigAttrs()
+    nix_hw_config = NixConfigAttrs()
     cpuinfo = Helpers.read_asset("cpu_info_amd")
     governors = Helpers.read_asset("available_governors")
 
@@ -24,18 +24,18 @@ def test_cpu_section_amd() -> None:
 
     with patch.object(Path, "read_text", new=fake_read):
         with patch.object(Path, "exists", return_value=True):
-            hardware.cpu_section(nix_config)
+            hardware.cpu_section(nix_hw_config)
 
     assert (
         "hardware.cpu.amd.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;"
-        in nix_config.attrs
+        in nix_hw_config.attrs
     )
-    assert 'powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";' in nix_config.attrs
-    assert "kvm-amd" in nix_config.kernel_modules
+    assert 'powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";' in nix_hw_config.attrs
+    assert "kvm-amd" in nix_hw_config.kernel_modules
 
 
 def test_cpu_section_intel() -> None:
-    nix_config = NixConfigAttrs()
+    nix_hw_config = NixConfigAttrs()
     cpuinfo = Helpers.read_asset("cpu_info_intel")
     governors = Helpers.read_asset("available_governors")
 
@@ -48,52 +48,52 @@ def test_cpu_section_intel() -> None:
 
     with patch.object(Path, "read_text", new=fake_read):
         with patch.object(Path, "exists", return_value=True):
-            hardware.cpu_section(nix_config)
+            hardware.cpu_section(nix_hw_config)
 
     assert (
         "hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;"
-        in nix_config.attrs
+        in nix_hw_config.attrs
     )
-    assert 'powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";' in nix_config.attrs
-    assert "kvm-intel" in nix_config.kernel_modules
+    assert 'powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";' in nix_hw_config.attrs
+    assert "kvm-intel" in nix_hw_config.kernel_modules
 
 
 def test_usb_keyboard() -> None:
-    nix_config = NixConfigAttrs()
+    nix_hw_config = NixConfigAttrs()
     pyudev_device = FakeDevice()
     pyudev_device.ID_INPUT_KEYBOARD = "1"
     pyudev_device.ID_USB_DRIVER = "usbhid"
-    hardware.usb_keyboard(nix_config, pyudev_device)
-    assert "usbhid" in nix_config.initrd_available_kernel_modules
+    hardware.usb_keyboard(nix_hw_config, pyudev_device)
+    assert "usbhid" in nix_hw_config.initrd_available_kernel_modules
 
 
 def test_bcache() -> None:
-    nix_config = NixConfigAttrs()
+    nix_hw_config = NixConfigAttrs()
     pyudev_device = FakeDevice()
     pyudev_device.ID_FS_TYPE = "bcache"
-    hardware.bcache(nix_config, pyudev_device)
-    assert "bcache" in nix_config.initrd_available_kernel_modules
+    hardware.bcache(nix_hw_config, pyudev_device)
+    assert "bcache" in nix_hw_config.initrd_available_kernel_modules
 
 
 def test_bcache_false() -> None:
-    nix_config = NixConfigAttrs()
+    nix_hw_config = NixConfigAttrs()
     pyudev_device = FakeDevice()
     pyudev_device.ID_FS_TYPE = "ext4"
-    hardware.bcache(nix_config, pyudev_device)
-    assert "bcache" not in nix_config.initrd_available_kernel_modules
+    hardware.bcache(nix_hw_config, pyudev_device)
+    assert "bcache" not in nix_hw_config.initrd_available_kernel_modules
 
 
 def test_virt_section() -> None:
-    nix_config = NixConfigAttrs()
+    nix_hw_config = NixConfigAttrs()
     with patch("subprocess.run") as subprocess_mock:
         subprocess_mock.return_value.stdout = "kvm"
-        hardware.virt_section(nix_config)
-        assert '(modulesPath + "/profiles/qemu-quest.nix")' in nix_config.imports
+        hardware.virt_section(nix_hw_config)
+        assert '(modulesPath + "/profiles/qemu-quest.nix")' in nix_hw_config.imports
 
 
 def test_virt_section_process_error() -> None:
-    nix_config = NixConfigAttrs()
+    nix_hw_config = NixConfigAttrs()
     with patch("subprocess.run") as subprocess_mock:
         subprocess_mock.side_effect = subprocess.CalledProcessError(1, "cmd", "output")
-        hardware.virt_section(nix_config)
-        assert '(modulesPath + "/installer/scan/not-detected.nix")' in nix_config.imports
+        hardware.virt_section(nix_hw_config)
+        assert '(modulesPath + "/installer/scan/not-detected.nix")' in nix_hw_config.imports
