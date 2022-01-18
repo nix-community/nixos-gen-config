@@ -1,7 +1,6 @@
 from dataclasses import dataclass, field
 
-from nixos_gen_config.auxiliary_functions import (to_nix_list,
-                                                  to_nix_string_list, uniq)
+from nixos_gen_config.auxiliary_functions import to_nix_list, to_nix_string_list, uniq
 
 
 @dataclass

@@ -7,6 +7,7 @@ def process_args() -> argparse.Namespace:
     parser.add_argument(
         "--root",
         type=Path,
+        default="/",
         help=(
             "If this option is given, treat the directory root as the root of the file system. This means that "
             "configuration files will be written to root/etc/nixos, and that any file systems outside of root are "
@@ -16,9 +17,8 @@ def process_args() -> argparse.Namespace:
     parser.add_argument(
         "--dir",
         type=Path,
-        # NOTE: uncomment
+        # NOTE: switch to /etc/nixos
         default="/etc/nixos1",
-        # default="config1",
         help="write the configuration files to the directory specified instead of /etc/nixos",
     )
     parser.add_argument(
