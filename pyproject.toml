@@ -31,15 +31,15 @@ build-backend = "poetry.core.masonry.api"
 line-length = 120
 target_version = ['py310']
 
+[tool.mypy]
+strict = true
+
 [[tool.mypy.overrides]]
 module = [
     "pyudev",
     "icecream",
 ]
 ignore_missing_imports = true
-
-[tool.mypy]
-strict = true
 
 [tool.pyright]
 # using pylint & mypy via null-ls so not needed

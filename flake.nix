@@ -63,8 +63,6 @@
             })
           ] ++ (with python.pkgs; [
             black
-            flake8
-            flake8-length
             mypy
             pylint
           ]);
